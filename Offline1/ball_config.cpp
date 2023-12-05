@@ -172,6 +172,40 @@ public:
     lz += look.z * distance;
   }
 
+  void moveForwardOrBackward(double distance, bool forward = true) {
+    Vec lookUnit = getLookUnitVector();
+
+    if(forward) {
+      moveCameraPositionAlongVector(lookUnit, distance);
+    } else {
+      moveCameraPositionAlongVector(lookUnit, -distance);
+    }    
+  }
+
+  void moveLeftOrRight(double distance, bool left = true) {
+    Vec right = getRightUnitVector();
+
+    if(left) {
+      moveCameraPositionAlongVector(right, -distance);
+      moveLookPositionAlongVector(right, -distance);
+    } else {
+      moveCameraPositionAlongVector(right, distance);
+      moveLookPositionAlongVector(right, distance);
+    }
+  }
+
+  void moveUpOrDown(double distance, bool upDir = true) {
+    Vec up = getUpUnitVector();
+
+    if(upDir) {
+      moveCameraPositionAlongVector(up, distance);
+      moveLookPositionAlongVector(up, distance);
+    } else {
+      moveCameraPositionAlongVector(up, -distance);
+      moveLookPositionAlongVector(up, -distance);
+    }
+  }
+
   void lookLeftOrRight(double angle, bool left = true) {
     Vec look = getLookVector();
     Vec up = Vec(ux, uy, uz);

@@ -42,51 +42,41 @@ void keyboardSpecialListener(int key, int x, int y) {
   switch (key) {
   case GLUT_KEY_UP:
     printf("Up arrow pressed\n");
-    camera.moveCameraPositionAlongVector(camera.getLookUnitVector(), 1);
+    camera.moveForwardOrBackward(step, true);
     break;
 
   case GLUT_KEY_DOWN:
     printf("Down arrow pressed\n");
-    camera.moveCameraPositionAlongVector(camera.getLookUnitVector(), -1);
+    camera.moveForwardOrBackward(step, false);
     break;
 
   case GLUT_KEY_RIGHT:
     printf("Right arrow pressed\n");
     {
-      Vec right = camera.getRightUnitVector();
-      camera.moveCameraPositionAlongVector(right, 1);
-      camera.moveLookPositionAlongVector(right, 1);
+      camera.moveLeftOrRight(step, false);
     }
     break;
 
   case GLUT_KEY_LEFT:
     printf("Left arrow pressed\n");
     {
-      Vec right = camera.getRightUnitVector();
-      camera.moveCameraPositionAlongVector(right, -1);
-      camera.moveLookPositionAlongVector(right, -1);
+      camera.moveLeftOrRight(step, true);
     }
     break;
 
   case GLUT_KEY_PAGE_UP:
     printf("Page up pressed\n");
     {
-      Vec up = camera.getUpUnitVector();
-      camera.moveCameraPositionAlongVector(up, 1);
-      camera.moveLookPositionAlongVector(up, 1);
+      camera.moveUpOrDown(step, true);
     }
     break;
 
   case GLUT_KEY_PAGE_DOWN:
     printf("Page down pressed\n");
     {
-      Vec up = camera.getUpUnitVector();
-      camera.moveCameraPositionAlongVector(up, -1);
-      camera.moveLookPositionAlongVector(up, -1);
+      camera.moveUpOrDown(step, false);
     }
     break;
-
-    // page_up and page_down to move the camera up and down
 
   default:
     printf("We don't know what you pressedBRO\n");
