@@ -411,7 +411,7 @@ void display() {
   glColor3f(1.0f, 0.0f, 0.0f); // Green
   drawAxes();
 
-  drawCheckers(1);
+  drawCheckers(4);
 
   double angle_in_degree = ball.move_angle_x * 180 / PI;
 
@@ -423,12 +423,22 @@ void display() {
   drawArrow(3);
   glPopMatrix();
 
+  // // ball_pointing_vector
+  // glColor3f(0.0f, 0.0f, 1.0f); // Blue
+  // glPushMatrix();
+  // glTranslatef(ball.x_coord, ball.y_coord, ball.radius + CLEARANCE);
+  // glRotatef(ball.rotation_angle_x * 180 / PI, 1, 0, 0);
+  // glRotatef(ball.rotation_angle_y * 180 / PI, 0, 1, 0);
+  // glRotatef(-90, 0, 1, 0);
+  // drawArrow(3);
+  // glPopMatrix();
+
   // ball
   glColor3f(1.0f, 0.0f, 0.0f); // Red
   glPushMatrix();
   glTranslatef(ball.x_coord, ball.y_coord, CLEARANCE + ball.radius);
-  glRotatef(ball.orientation_angle_y * 180 / PI, 1, 0, 0);
-  glRotatef(ball.orientation_angle_x * 180 / PI, 0, 1, 0);
+  glRotatef(ball.rotation_angle_x * 180 / PI, 1, 0, 0);
+  glRotatef(ball.rotation_angle_y * 180 / PI, 0, 1, 0);
   // glTranslatef(0, 0, -ball.radius);
   // drawCube(ball.radius);
   drawSphere(ball.radius, ball.sector_count, ball.stack_count);
