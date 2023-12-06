@@ -1,5 +1,6 @@
 #include "ball.cpp"
 #include "camera.cpp"
+#include "co-ordinate.cpp"
 #include <bits/stdc++.h>
 
 #ifdef __linux__
@@ -27,21 +28,6 @@ bool rotateZ = false;
 GLint counter = 0;
 Camera camera;
 Ball ball;
-
-class Point3D {
-public:
-  double x, y, z;
-  Point3D() {
-    x = 0;
-    y = 0;
-    z = 0;
-  }
-  Point3D(double x, double y, double z) {
-    this->x = x;
-    this->y = y;
-    this->z = z;
-  }
-};
 
 void init() {
   printf("Do your initialization here\n");
@@ -190,13 +176,6 @@ void drawCheckers(double a) {
   }
 }
 
-Point3D getCartesianCoordinates(double r, double phi, double theta) {
-  phi = phi * M_PI / 180;
-  theta = theta * M_PI / 180;
-  return Point3D(r * cos(phi) * cos(theta), r * cos(phi) * sin(theta),
-                 r * sin(phi));
-}
-
 bool show = false;
 
 void drawSphere(double r, int sectorCount, int stackCount) {
@@ -208,9 +187,10 @@ void drawSphere(double r, int sectorCount, int stackCount) {
     double phi1 = 90.0 - (180.0 * stackStep) / stackCount;
     double phi2 = 90.0 - (180.0 * (stackStep + 1)) / stackCount;
 
-    if(show) printf("phi1: %lf, phi2: %lf\n", phi1, phi2);
+    if (show)
+      printf("phi1: %lf, phi2: %lf\n", phi1, phi2);
 
-    if(stackStep * 2 >= stackCount) {
+    if (stackStep * 2 >= stackCount) {
       isRed = true;
     }
 
@@ -218,11 +198,12 @@ void drawSphere(double r, int sectorCount, int stackCount) {
       double theta1 = (360.0 * sectorStep) / sectorCount;
       double theta2 = (360.0 * (sectorStep + 1)) / sectorCount;
 
-      if (show) printf("theta1: %lf, theta2: %lf\n", theta1, theta2);
+      if (show)
+        printf("theta1: %lf, theta2: %lf\n", theta1, theta2);
 
-      isRed = !isRed;      
+      isRed = !isRed;
 
-      if(isRed) {
+      if (isRed) {
         glColor3f(1.0f, 0.0f, 0.0f); // Red
       } else {
         glColor3f(0.0f, 1.0f, 0.0f); // Green
@@ -231,18 +212,18 @@ void drawSphere(double r, int sectorCount, int stackCount) {
       // anticlockWise, p1,p2,p3,p4
 
       // ph1,theta1
-      Point3D p1 = getCartesianCoordinates(r, phi1, theta1);
+      Point3D p1 = getCartesianCoordinates3D(r, phi1, theta1);
 
       // phi2, theta1
-      Point3D p2 = getCartesianCoordinates(r, phi2, theta1);
+      Point3D p2 = getCartesianCoordinates3D(r, phi2, theta1);
 
       // phi2, theta2
-      Point3D p3 = getCartesianCoordinates(r, phi2, theta2);
+      Point3D p3 = getCartesianCoordinates3D(r, phi2, theta2);
 
       // phi1, theta2
-      Point3D p4 = getCartesianCoordinates(r, phi1, theta2);
+      Point3D p4 = getCartesianCoordinates3D(r, phi1, theta2);
 
-      if(show) {
+      if (show) {
         printf("p1: %lf %lf %lf\n", p1.x, p1.y, p1.z);
         printf("p2: %lf %lf %lf\n", p2.x, p2.y, p2.z);
         printf("p3: %lf %lf %lf\n", p3.x, p3.y, p3.z);
@@ -269,10 +250,71 @@ void drawSphere(double r, int sectorCount, int stackCount) {
         }
         glEnd();
       }
-      if(show) printf("\n");
+      if (show)
+        printf("\n");
     }
   }
   show = false;
+}
+
+void drawCone(double r, double h, int sectorCount) {
+  for (int sectorStep = 0; sectorStep < sectorCount; sectorStep++) {
+    double theta1 = (360.0 * sectorStep) / sectorCount;
+    double theta2 = (360.0 * (sectorStep + 1)) / sectorCount;
+
+    // anticlockWise, p1,p2
+
+    // theta1
+    Point3D p1 = getCartesianCoordinates3D(r, 0, theta1);
+
+    // theta2
+    Point3D p2 = getCartesianCoordinates3D(r, 0, theta2);
+
+    // top
+    Point3D p3 = Point3D(0, 0, h);
+
+    glBegin(GL_TRIANGLES);
+    {
+      glVertex3f(p1.x, p1.y, p1.z);
+      glVertex3f(p2.x, p2.y, p2.z);
+      glVertex3f(p3.x, p3.y, p3.z);
+    }
+    glEnd();
+
+    // bottom
+    glBegin(GL_TRIANGLES);
+    {
+      glVertex3f(p1.x, p1.y, 0);
+      glVertex3f(p2.x, p2.y, 0);
+      glVertex3f(p3.x, p3.y, 0);
+    }
+    glEnd();
+  }
+}
+
+// fapa cylinder, vorat korte gele 2ta circle lagbe
+void drawCylinder(double r, double h, int sectorCount) {
+  for (int sectorStep = 0; sectorStep < sectorCount; sectorStep++) {
+    double theta1 = (360.0 * sectorStep) / sectorCount;
+    double theta2 = (360.0 * (sectorStep + 1)) / sectorCount;
+
+    // anticlockWise, p1,p2,p3,p4
+
+    // theta1
+    Point3D p1 = getCartesianCoordinates3D(r, 0, theta1);
+
+    // theta2
+    Point3D p2 = getCartesianCoordinates3D(r, 0, theta2);
+
+    glBegin(GL_QUADS);
+    {
+      glVertex3f(p1.x, p1.y, 0);
+      glVertex3f(p2.x, p2.y, 0);
+      glVertex3f(p2.x, p2.y, h);
+      glVertex3f(p1.x, p1.y, h);
+    }
+    glEnd();
+  }
 }
 
 void drawAxes() {
@@ -343,43 +385,19 @@ void drawCube(double a) {
   glEnd();
 }
 
-void drawTriangle(double a) {
-  glBegin(GL_TRIANGLES);
-  {
-    glVertex3f(0, -a, 0);
-    glVertex3f(0, a, 0);
-    glVertex3f(2 * a, 0, 0);
-  }
-  glEnd();
-}
-
-void drawRectangle(double width, double height) {
-
-  double a = width / 2.0;
-  double b = height;
-  glBegin(GL_QUADS);
-  {
-    glVertex3f(0, -a, 0);
-    glVertex3f(0, a, 0);
-    glVertex3f(b, a, 0);
-    glVertex3f(b, -a, 0);
-  }
-  glEnd();
-}
-
 void drawArrow(double a) {
   double line_height = 0.8 * a;
-  double line_width = 0.1 * a;
+  double line_width = 0.05 * a;
 
-  double triangle_width = 0.2 * a;
+  double triangle_width = 0.1 * a;
 
   glPushMatrix();
-  drawRectangle(line_width, line_height);
+  drawCylinder(line_width, line_height, 16);
   glPopMatrix();
 
   glPushMatrix();
-  glTranslatef(line_height, 0, 0);
-  drawTriangle(triangle_width);
+  glTranslatef(0, 0, line_height);
+  drawCone(triangle_width, 2 * triangle_width, 16);
   glPopMatrix();
 }
 
@@ -398,15 +416,6 @@ void display() {
   gluLookAt(camera.ex, camera.ey, camera.ez, camera.lx, camera.ly, camera.lz,
             camera.ux, camera.uy, camera.uz);
 
-  // glBegin(GL_LINES);{
-  //     glColor3f(1.0f, 1.0f, 1.0f); // Green
-  //     glVertex2f(-1.0f, 0.0f);
-  //     glVertex2f(1.0f, 0.0f);
-
-  //     glVertex2f(0.0f, -1.0f);
-  //     glVertex2f(0.0f, 1.0f);
-
-  // }glEnd();
 
   glColor3f(1.0f, 0.0f, 0.0f); // Green
   drawAxes();
@@ -416,22 +425,13 @@ void display() {
   double angle_in_degree = ball.move_angle_x * 180 / PI;
 
   // direction_arrow
-  glColor3f(0.0f, 1.0f, 0.0f); // Green
+  glColor3f(0.0f, 0.0f, 1.0f); // Blue
   glPushMatrix();
-  glTranslatef(ball.x_coord, ball.y_coord, CLEARANCE);
+  glTranslatef(ball.x_coord, ball.y_coord, ball.radius + CLEARANCE);
   glRotatef(angle_in_degree, 0, 0, 1);
+  glRotatef(90, 0, 1, 0);
   drawArrow(3);
   glPopMatrix();
-
-  // // ball_pointing_vector
-  // glColor3f(0.0f, 0.0f, 1.0f); // Blue
-  // glPushMatrix();
-  // glTranslatef(ball.x_coord, ball.y_coord, ball.radius + CLEARANCE);
-  // glRotatef(ball.rotation_angle_x * 180 / PI, 1, 0, 0);
-  // glRotatef(ball.rotation_angle_y * 180 / PI, 0, 1, 0);
-  // glRotatef(-90, 0, 1, 0);
-  // drawArrow(3);
-  // glPopMatrix();
 
   // ball
   glColor3f(1.0f, 0.0f, 0.0f); // Red
@@ -439,8 +439,6 @@ void display() {
   glTranslatef(ball.x_coord, ball.y_coord, CLEARANCE + ball.radius);
   glRotatef(ball.rotation_angle_x * 180 / PI, 1, 0, 0);
   glRotatef(ball.rotation_angle_y * 180 / PI, 0, 1, 0);
-  // glTranslatef(0, 0, -ball.radius);
-  // drawCube(ball.radius);
   drawSphere(ball.radius, ball.sector_count, ball.stack_count);
   glPopMatrix();
 
