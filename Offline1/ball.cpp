@@ -33,7 +33,7 @@ public:
     x_coord = 0;
     y_coord = 0;
     radius = 1;
-    speed = 0.5;
+    speed = 0.4;
     move_angle_x = M_PI / 4;
     ball_rotation_angle = 0.05;
 
@@ -93,15 +93,34 @@ public:
     prev_pointing_vector = pointing_vector;
     pointing_vector = pointing_vector.rotateAroundAxis(rotation_axis, angle)
                           .getNormalizedResult();
-
     prev_move_angle_x = move_angle_x;
   }
 
   void fixPointingVector() {
     pointing_vector = prev_pointing_vector;
+
     computeAngles();
 
-    // speed = speed / 2;
+    double angle = speed / radius / 2.0; // avg before and after collision
+
+    double temp_move_angle_x = this->move_angle_x;
+    this->move_angle_x = this->prev_move_angle_x;
+
+    // rotate at the direction before collision
+    if (last_move == FORWARD) {
+      rotateBall(angle);
+    } else {
+      rotateBall(-angle);
+    }
+
+    this->move_angle_x = temp_move_angle_x;
+    if(last_move == FORWARD) {
+      rotateBall(angle);
+    } else {
+      rotateBall(-angle);
+    }
+
+    // rotate at the direction after collision
   }
 
   void moveForwardOrBackward(bool forward = true) {
@@ -127,7 +146,7 @@ public:
     //   angle = -angle;
     // }
 
-    rotateBall(angle);  
+    rotateBall(angle);
     computeAngles();
   }
 };
