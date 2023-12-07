@@ -33,7 +33,7 @@ public:
     x_coord = 0;
     y_coord = 0;
     radius = 1;
-    speed = 0.4;
+    speed = 0.5;
     move_angle_x = M_PI / 4;
     ball_rotation_angle = 0.05;
 
@@ -113,14 +113,16 @@ public:
       rotateBall(-angle);
     }
 
+    computeAngles();
+
     this->move_angle_x = temp_move_angle_x;
     if(last_move == FORWARD) {
       rotateBall(angle);
     } else {
       rotateBall(-angle);
     }
-
-    // rotate at the direction after collision
+    
+    computeAngles();
   }
 
   void moveForwardOrBackward(bool forward = true) {
@@ -141,10 +143,6 @@ public:
 
     x_coord += d_x;
     y_coord += d_y;
-
-    // if (forward) {
-    //   angle = -angle;
-    // }
 
     rotateBall(angle);
     computeAngles();

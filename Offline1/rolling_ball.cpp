@@ -18,6 +18,8 @@
 
 #define CLEARANCE 0.1
 
+#define SIMULATION_CALL_INTERVAL 50
+
 #define DT 10
 
 #define PI 3.1415926535897
@@ -98,7 +100,7 @@ void checkCollisionManual(Ball *ball) {
     ball->y_coord = B - (y - B);
   }
 
-  if(x_change || y_change) {
+  if (x_change || y_change) {
     ball->fixPointingVector();
   }
 }
@@ -209,6 +211,11 @@ void keyboardListener(unsigned char key, int x, int y) {
         checkCollisionManual(&ball);
       }
     }
+    break;
+
+  case ' ':
+    printf("space pressed\n");
+    { simulationMode = !simulationMode; }
     break;
 
   default:
@@ -574,24 +581,29 @@ void idle() {
                        // variable set koire then call koro display
 }
 
-void checkCollision(int value) {
-
-  // we are in manual control
-  if (!simulationMode) {
-    glutTimerFunc(10, checkCollision, 10);
-    return;
+void ballMovement(int value) {
+  if (simulationMode) {
+    ball.moveForwardOrBackward(true);
+    checkCollisionManual(&ball);
   }
 
-  double ball_rotation_angle = ball.ball_rotation_angle;
-  double vx = ball.speed * cos(ball.move_angle_x);
-  double vy = ball.speed * sin(ball.move_angle_x);
-
-  double x = ball.x_coord + vx;
-  double y = ball.y_coord + vy;
-
   glutPostRedisplay();
-  glutTimerFunc(10, checkCollision, 10);
+  glutTimerFunc(SIMULATION_CALL_INTERVAL, ballMovement, SIMULATION_CALL_INTERVAL);
 }
+
+// void checkCollision(int value) {
+
+//   // we are in manual control
+//   if (!simulationMode) {
+//     glutTimerFunc(10, checkCollision, 10);
+//     return;
+//   } else {
+//     checkCollisionManual(&ball);
+
+//     glutPostRedisplay();
+//     glutTimerFunc(10, checkCollision, 10);
+//   }
+// }
 
 int main(int argc, char **argv) {
   glutInit(&argc, argv);
@@ -603,6 +615,9 @@ int main(int argc, char **argv) {
   glutDisplayFunc(display);
   glutKeyboardFunc(keyboardListener);
   glutSpecialFunc(keyboardSpecialListener);
+
+  glutTimerFunc(1, ballMovement, 200);
+  // glutTimerFunc(1, checkCollision, 10);
   glutIdleFunc(idle);
   init();
 
