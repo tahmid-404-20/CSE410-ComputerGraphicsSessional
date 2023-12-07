@@ -2,6 +2,7 @@
 #include "camera.cpp"
 #include "co-ordinate.cpp"
 #include <bits/stdc++.h>
+#include <unordered_map>
 
 #ifdef __linux__
 #include <GL/glut.h>
@@ -26,6 +27,14 @@
 
 using namespace std;
 
+enum Wall {
+  LEFT,
+  RIGHT,
+  TOP,
+  BOTTOM
+}; // think x axis as horizontal
+   // and y axis as vertical
+
 int animate = 1;
 double step = 0.5;
 double rotation_angle = 0.05;
@@ -34,11 +43,131 @@ int x_coord, y_coord;
 bool rotateZ = false;
 
 bool simulationMode = false;
+int collisionTracksCurrentSimulation;
+double simulationTime;
+
+void ballMoveMentEventDriven(int hashIndex);
+void checkCollisionManual(Ball *ball);
+void predictNextCollision(Ball &ball);
 
 // a openGL integer
 GLint counter = 0;
 Camera camera;
 Ball ball;
+
+class Event {
+public:
+  double time;
+  int collisionCount;
+  int id;
+
+  Event() {
+    this->time = 0;
+    this->collisionCount = 0;
+    this->id = 0;
+  }
+
+  Event(double time, int collisionCount, int id) {
+    this->time = time;
+    this->collisionCount = collisionCount;
+    this->id = id;
+  }
+
+  bool operator<(const Event &other) const { return time > other.time; }
+};
+
+priority_queue<Event> eventQueue;
+unordered_map<int, Event> collisionMap;
+
+double predictCollisionTime(Ball &ball, Wall wall) {
+  double x = ball.x_coord;
+  double y = ball.y_coord;
+  double r = ball.radius;
+
+  // the ball moves ball.speed pixels in each SIMULATION_CALL_INTERVAL, so we
+  // need to calculate the time to reach the wall
+  double dx = ball.speed * cos(ball.move_angle_x);
+  double dy = ball.speed * sin(ball.move_angle_x);
+
+  double t = 0;
+
+  if ((wall == LEFT || wall == RIGHT) && dx == 0) {
+    return -1;
+  } else if ((wall == TOP || wall == BOTTOM) && dy == 0) {
+    return -1;
+  }
+
+  switch (wall) {
+  case LEFT:
+    t = (BOUNDARY_RADIUS - r - x) / dx;
+    break;
+  case RIGHT:
+    t = (-BOUNDARY_RADIUS + r - x) / dx;
+    break;
+  case TOP:
+    t = (BOUNDARY_RADIUS - r - y) / dy;
+    break;
+  case BOTTOM:
+    t = (-BOUNDARY_RADIUS + r - y) / dy;
+    break;
+  }
+
+  t *= SIMULATION_CALL_INTERVAL;
+
+  // // t should be integer multiple of SIMULATION_CALL_INTERVAL
+  // if (t - (int)t >= 0.00000001) {
+  //   t = (int)t + SIMULATION_CALL_INTERVAL;
+  // }
+
+  return t;
+}
+
+void initializeSimulationMode() {
+  ball.collision_count = 0;
+  collisionTracksCurrentSimulation = 0;
+  simulationTime = 0.0;
+
+  while (!eventQueue.empty()) {
+    eventQueue.pop();
+  }
+
+  collisionMap.clear();
+
+  Wall wall;
+  for (int i = 0; i < BOUNDARY_DIMENSION; i++) {
+    wall = (Wall)i;
+    double t = predictCollisionTime(ball, wall);
+    if (t - 0.0 >= 0.00000001) {
+      Event event(t, ball.collision_count, collisionTracksCurrentSimulation++);
+      eventQueue.push(event);
+    }
+  }
+
+  // pop the first event
+  Event event = eventQueue.top();
+  eventQueue.pop();
+
+  collisionMap[event.id] = event;
+  glutTimerFunc(event.time, ballMoveMentEventDriven, event.id);
+}
+
+void ballMoveMentEventDriven(int hashIndex) {
+  if(!simulationMode) {
+    return;
+  }
+  
+  Event event = collisionMap[hashIndex];
+
+  if (event.collisionCount != ball.collision_count) {
+    printf("Event is not valid anymore\n");
+    return;
+  }
+
+  ball.moveForwardOrBackward(true);
+  ball.collision_count++;
+  checkCollisionManual(&ball);
+  predictNextCollision(ball);
+}
 
 void init() {
   printf("Do your initialization here\n");
@@ -102,6 +231,24 @@ void checkCollisionManual(Ball *ball) {
 
   if (x_change || y_change) {
     ball->fixPointingVector();
+  }
+
+  if (simulationMode) {
+    predictNextCollision(*ball);
+  }
+}
+
+void predictNextCollision(Ball &ball) {
+  Wall wall;
+  for (int i = 0; i < BOUNDARY_DIMENSION; i++) {
+    wall = (Wall)i;
+    double t = predictCollisionTime(ball, wall);
+    if (t - 0.0 >= 0.00000001) {
+      Event event(t, ball.collision_count, collisionTracksCurrentSimulation++);
+      eventQueue.push(event);
+      collisionMap[event.id] = event;
+      glutTimerFunc(event.time, ballMoveMentEventDriven, event.id);
+    }
   }
 }
 
@@ -187,11 +334,21 @@ void keyboardListener(unsigned char key, int x, int y) {
 
   case 'j': // rotate counter-clockwise
     printf("j pressed\n");
-    { ball.changeMoveDirectionAngle(false); }
+    {
+      ball.changeMoveDirectionAngle(false);
+      if (simulationMode) {
+        predictNextCollision(ball);
+      }
+    }
     break;
   case 'l': // rotate clockwise
     printf("l pressed\n");
-    { ball.changeMoveDirectionAngle(true); }
+    {
+      ball.changeMoveDirectionAngle(true);
+      if (simulationMode) {
+        predictNextCollision(ball);
+      }
+    }
     break;
 
   case 'i': // move forward
@@ -215,7 +372,12 @@ void keyboardListener(unsigned char key, int x, int y) {
 
   case ' ':
     printf("space pressed\n");
-    { simulationMode = !simulationMode; }
+    {
+      simulationMode = !simulationMode;
+      if (simulationMode) {
+        initializeSimulationMode();
+      }
+    }
     break;
 
   default:
@@ -523,8 +685,8 @@ void drawArrow(double a) {
 void display() {
   // printf("Display function called for %d times\n", counter);
 
-  // glClearColor(0.5f, 0.5f, 0.5f, 1.0f); // Set background color to black and
-  // opaque
+  // glClearColor(0.5f, 0.5f, 0.5f, 1.0f); // Set background color to black
+  // and opaque
   glEnable(GL_DEPTH_TEST);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   // glClear(GL_COLOR_BUFFER_BIT);
@@ -584,11 +746,12 @@ void idle() {
 void ballMovement(int value) {
   if (simulationMode) {
     ball.moveForwardOrBackward(true);
-    checkCollisionManual(&ball);
+    // checkCollisionManual(&ball);
   }
 
   glutPostRedisplay();
-  glutTimerFunc(SIMULATION_CALL_INTERVAL, ballMovement, SIMULATION_CALL_INTERVAL);
+  glutTimerFunc(SIMULATION_CALL_INTERVAL, ballMovement,
+                SIMULATION_CALL_INTERVAL);
 }
 
 // void checkCollision(int value) {

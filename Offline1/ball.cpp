@@ -29,6 +29,8 @@ public:
 
   Vec pointing_vector;
 
+  int collision_count;
+
   Ball() {
     x_coord = 0;
     y_coord = 0;
@@ -46,6 +48,8 @@ public:
     pointing_vector = Vec(0, 0, 1);
 
     last_move = FORWARD;
+
+    collision_count = 0;
   }
 
   // constructor to set co-ordinates, direction and speed
@@ -65,6 +69,8 @@ public:
 
     this->pointing_vector = Vec(0, 0, 1);
     this->last_move = FORWARD;
+
+    this->collision_count = 0;
   }
 
   void computeAngles() {
