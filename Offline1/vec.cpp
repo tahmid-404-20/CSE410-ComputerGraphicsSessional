@@ -54,14 +54,6 @@ public:
     return result;
   }
 
-  Vec operator+=(Vec v) {
-    x += v.x;
-    y += v.y;
-    z += v.z;
-
-    return *this;
-  }
-
   // methods
   double getMagnitude() { return sqrt(x * x + y * y + z * z); }
 

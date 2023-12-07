@@ -11,7 +11,14 @@
 #endif
 
 #define CHECKERBOARD_SIZE 80
+
+#define BOUNDARY_RADIUS 12
+#define BOUNDARY_DIMENSION 4
+#define BOUNDARY_HEIGHT 2
+
 #define CLEARANCE 0.1
+
+#define DT 10
 
 #define PI 3.1415926535897
 
@@ -23,6 +30,8 @@ double rotation_angle = 0.05;
 
 int x_coord, y_coord;
 bool rotateZ = false;
+
+bool simulationMode = false;
 
 // a openGL integer
 GLint counter = 0;
@@ -42,6 +51,56 @@ void init() {
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   gluPerspective(60, 1, 1, 500);
+}
+
+void checkCollisionManual(Ball *ball) {
+  double x = ball->x_coord;
+  double y = ball->y_coord;
+  double r = ball->radius;
+
+  double dx = ball->speed * cos(ball->move_angle_x);
+  double dy = ball->speed * sin(ball->move_angle_x);
+
+  bool x_change = false;
+  bool y_change = false;
+
+  if (x + r > BOUNDARY_RADIUS ||
+      x - r < -BOUNDARY_RADIUS) { // collision with plane orthogonal to x-axis
+
+    ball->move_angle_x = M_PI - ball->move_angle_x;
+    x_change = true;
+    printf("x_change\n");
+  }
+
+  if (y + r > BOUNDARY_RADIUS || y - r < -BOUNDARY_RADIUS) {
+    ball->move_angle_x = -ball->move_angle_x;
+    y_change = true;
+    printf("y_change\n");
+  }
+
+  double B;
+  if (x_change) {
+    double prev_x = x - dx;
+    if (x + r > BOUNDARY_RADIUS) {
+      B = BOUNDARY_RADIUS - r;
+    } else {
+      B = -BOUNDARY_RADIUS + r;
+    }
+    ball->x_coord = B - (x - B);
+  }
+
+  if (y_change) {
+    if (y + r > BOUNDARY_RADIUS) {
+      B = BOUNDARY_RADIUS - r;
+    } else {
+      B = -BOUNDARY_RADIUS + r;
+    }
+    ball->y_coord = B - (y - B);
+  }
+
+  if(x_change || y_change) {
+    ball->fixPointingVector();
+  }
 }
 
 void keyboardSpecialListener(int key, int x, int y) {
@@ -135,11 +194,21 @@ void keyboardListener(unsigned char key, int x, int y) {
 
   case 'i': // move forward
     printf("i pressed\n");
-    { ball.moveForwardOrBackward(true); }
+    {
+      if (!simulationMode) {
+        ball.moveForwardOrBackward(true);
+        checkCollisionManual(&ball);
+      }
+    }
     break;
   case 'k': // move backward
     printf("k pressed\n");
-    { ball.moveForwardOrBackward(false); }
+    {
+      if (!simulationMode) {
+        ball.moveForwardOrBackward(false);
+        checkCollisionManual(&ball);
+      }
+    }
     break;
 
   default:
@@ -332,6 +401,49 @@ void drawAxes() {
   glEnd();
 }
 
+void drawRectangle(double width, double height) {
+  double a = width / 2;
+  double b = height;
+  glBegin(GL_QUADS);
+  {
+    glVertex3f(0, -a, 0);
+    glVertex3f(b, -a, 0);
+    glVertex3f(b, a, 0);
+    glVertex3f(0, a, 0);
+  }
+  glEnd();
+}
+
+void drawBoundaryWallOfRadius(double width, double height, double a) {
+  glPushMatrix();
+  glTranslatef(a, 0, 0);
+  glRotatef(-90, 0, 1, 0);
+  drawRectangle(width, height);
+  glPopMatrix();
+}
+
+bool ok = true;
+
+void drawNGonBoundary(int n, double radius, double wallHeight) {
+  double angle = 360.0 / n;
+
+  double theta = angle / 2.0;
+  double width = 2 * radius * tan(theta * PI / 180.0);
+
+  if (ok) {
+    printf("angle: %lf, theta: %lf, width: %lf radius: %lf tan: %lf\n", angle,
+           theta, width, radius, tan(theta * PI / 360.0));
+    ok = false;
+  }
+
+  for (int i = 0; i < n; i++) {
+    glPushMatrix();
+    glRotatef(i * angle, 0, 0, 1);
+    drawBoundaryWallOfRadius(width, wallHeight, radius);
+    glPopMatrix();
+  }
+}
+
 void drawSquare(double a) {
   glBegin(GL_QUADS);
   {
@@ -387,7 +499,7 @@ void drawCube(double a) {
 
 void drawArrow(double a) {
   double line_height = 0.8 * a;
-  double line_width = 0.05 * a;
+  double line_width = 0.025 * a;
 
   double triangle_width = 0.1 * a;
 
@@ -416,19 +528,27 @@ void display() {
   gluLookAt(camera.ex, camera.ey, camera.ez, camera.lx, camera.ly, camera.lz,
             camera.ux, camera.uy, camera.uz);
 
-
   glColor3f(1.0f, 0.0f, 0.0f); // Green
   drawAxes();
 
   drawCheckers(4);
 
-  double angle_in_degree = ball.move_angle_x * 180 / PI;
+  // set color red
+  glColor3f(1.0f, 0.0f, 0.0f); // Red
+  drawNGonBoundary(BOUNDARY_DIMENSION, BOUNDARY_RADIUS, BOUNDARY_HEIGHT);
+
+  // up_arrow on ball, cyan color
+  glColor3f(0.0f, 1.0f, 1.0f); // Cyan
+  glPushMatrix();
+  glTranslatef(ball.x_coord, ball.y_coord, ball.radius + CLEARANCE);
+  drawArrow(3);
+  glPopMatrix();
 
   // direction_arrow
   glColor3f(0.0f, 0.0f, 1.0f); // Blue
   glPushMatrix();
   glTranslatef(ball.x_coord, ball.y_coord, ball.radius + CLEARANCE);
-  glRotatef(angle_in_degree, 0, 0, 1);
+  glRotatef(ball.move_angle_x * 180 / PI, 0, 0, 1);
   glRotatef(90, 0, 1, 0);
   drawArrow(3);
   glPopMatrix();
@@ -452,6 +572,25 @@ void idle() {
   // counter++;
   glutPostRedisplay(); // Post a re-paint request to activate display(),
                        // variable set koire then call koro display
+}
+
+void checkCollision(int value) {
+
+  // we are in manual control
+  if (!simulationMode) {
+    glutTimerFunc(10, checkCollision, 10);
+    return;
+  }
+
+  double ball_rotation_angle = ball.ball_rotation_angle;
+  double vx = ball.speed * cos(ball.move_angle_x);
+  double vy = ball.speed * sin(ball.move_angle_x);
+
+  double x = ball.x_coord + vx;
+  double y = ball.y_coord + vy;
+
+  glutPostRedisplay();
+  glutTimerFunc(10, checkCollision, 10);
 }
 
 int main(int argc, char **argv) {
