@@ -35,7 +35,6 @@ enum Wall {
 }; // think x axis as horizontal
    // and y axis as vertical
 
-int animate = 1;
 double step = 0.5;
 double rotation_angle = 0.05;
 
@@ -152,17 +151,20 @@ void initializeSimulationMode() {
 }
 
 void ballMoveMentEventDriven(int hashIndex) {
-  if(!simulationMode) {
+  if (!simulationMode) {
+    collisionMap.erase(hashIndex);
     return;
   }
-  
+
   Event event = collisionMap[hashIndex];
 
   if (event.collisionCount != ball.collision_count) {
-    printf("Event is not valid anymore\n");
+    printf("Event is not valid anymore in ballMovementEventDriven\n");
+    collisionMap.erase(hashIndex);
     return;
   }
 
+  collisionMap.erase(hashIndex);
   ball.moveForwardOrBackward(true);
   ball.collision_count++;
   checkCollisionManual(&ball);
@@ -246,9 +248,22 @@ void predictNextCollision(Ball &ball) {
     if (t - 0.0 >= 0.00000001) {
       Event event(t, ball.collision_count, collisionTracksCurrentSimulation++);
       eventQueue.push(event);
-      collisionMap[event.id] = event;
-      glutTimerFunc(event.time, ballMoveMentEventDriven, event.id);
     }
+  }
+
+  while (true) {
+    Event event = eventQueue.top();
+    eventQueue.pop();
+
+    if (event.collisionCount != ball.collision_count) {
+      printf("Event is not valid anymore in Predict NextCollision\n");
+      collisionMap.erase(event.id);
+      continue;
+    }
+
+    collisionMap[event.id] = event;
+    glutTimerFunc(event.time, ballMoveMentEventDriven, event.id);
+    break;
   }
 }
 
@@ -683,13 +698,9 @@ void drawArrow(double a) {
 }
 
 void display() {
-  // printf("Display function called for %d times\n", counter);
-
-  // glClearColor(0.5f, 0.5f, 0.5f, 1.0f); // Set background color to black
-  // and opaque
+ 
   glEnable(GL_DEPTH_TEST);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  // glClear(GL_COLOR_BUFFER_BIT);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -735,10 +746,6 @@ void display() {
 }
 
 void idle() {
-  if (animate) {
-    // counter++;
-  }
-  // counter++;
   glutPostRedisplay(); // Post a re-paint request to activate display(),
                        // variable set koire then call koro display
 }
@@ -753,20 +760,6 @@ void ballMovement(int value) {
   glutTimerFunc(SIMULATION_CALL_INTERVAL, ballMovement,
                 SIMULATION_CALL_INTERVAL);
 }
-
-// void checkCollision(int value) {
-
-//   // we are in manual control
-//   if (!simulationMode) {
-//     glutTimerFunc(10, checkCollision, 10);
-//     return;
-//   } else {
-//     checkCollisionManual(&ball);
-
-//     glutPostRedisplay();
-//     glutTimerFunc(10, checkCollision, 10);
-//   }
-// }
 
 int main(int argc, char **argv) {
   glutInit(&argc, argv);
