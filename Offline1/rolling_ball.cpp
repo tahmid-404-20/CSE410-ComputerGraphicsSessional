@@ -121,6 +121,12 @@ double predictCollisionTime(Ball &ball, Wall wall) {
   return t;
 }
 
+void updateCollisionMap(Event event) {
+  collisionMap[event.id] = event;
+  glutTimerFunc(event.time - simulationTime, ballMoveMentEventDriven, event.id);
+  simulationTime = event.time;
+}
+
 void initializeSimulationMode() {
   ball.collision_count = 0;
   collisionTracksCurrentSimulation = 0;
@@ -137,7 +143,8 @@ void initializeSimulationMode() {
     wall = (Wall)i;
     double t = predictCollisionTime(ball, wall);
     if (t - 0.0 >= 0.00000001) {
-      Event event(t, ball.collision_count, collisionTracksCurrentSimulation++);
+      Event event(simulationTime + t, ball.collision_count,
+                  collisionTracksCurrentSimulation++);
       eventQueue.push(event);
     }
   }
@@ -146,8 +153,10 @@ void initializeSimulationMode() {
   Event event = eventQueue.top();
   eventQueue.pop();
 
-  collisionMap[event.id] = event;
-  glutTimerFunc(event.time, ballMoveMentEventDriven, event.id);
+  updateCollisionMap(event);
+  // collisionMap[event.id] = event;
+  // glutTimerFunc(event.time - simulationTime, ballMoveMentEventDriven, event.id);
+  // simulationTime = event.time;
 }
 
 void ballMoveMentEventDriven(int hashIndex) {
@@ -246,7 +255,8 @@ void predictNextCollision(Ball &ball) {
     wall = (Wall)i;
     double t = predictCollisionTime(ball, wall);
     if (t - 0.0 >= 0.00000001) {
-      Event event(t, ball.collision_count, collisionTracksCurrentSimulation++);
+      Event event(simulationTime + t, ball.collision_count,
+                  collisionTracksCurrentSimulation++);
       eventQueue.push(event);
     }
   }
@@ -261,8 +271,7 @@ void predictNextCollision(Ball &ball) {
       continue;
     }
 
-    collisionMap[event.id] = event;
-    glutTimerFunc(event.time, ballMoveMentEventDriven, event.id);
+    updateCollisionMap(event);
     break;
   }
 }
@@ -698,7 +707,7 @@ void drawArrow(double a) {
 }
 
 void display() {
- 
+
   glEnable(GL_DEPTH_TEST);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -718,11 +727,21 @@ void display() {
   drawNGonBoundary(BOUNDARY_DIMENSION, BOUNDARY_RADIUS, BOUNDARY_HEIGHT);
 
   // up_arrow on ball, cyan color
-  glColor3f(0.0f, 1.0f, 1.0f); // Cyan
-  glPushMatrix();
-  glTranslatef(ball.x_coord, ball.y_coord, ball.radius + CLEARANCE);
-  drawArrow(3);
-  glPopMatrix();
+  // glColor3f(0.0f, 1.0f, 1.0f); // Cyan
+  // glPushMatrix();
+  // glTranslatef(ball.x_coord, ball.y_coord, ball.radius + CLEARANCE);
+  // drawArrow(3);
+  // glPopMatrix();
+
+  // // pointing_vectorcl
+  // glColor3f(1.0f, 1.0f, 0.0f); // Yellow
+  // glPushMatrix();
+  // glTranslatef(ball.x_coord, ball.y_coord, ball.radius + CLEARANCE);
+  // glRotatef(ball.rotation_angle_x * 180 / PI, 1, 0, 0);
+  // glRotatef(ball.rotation_angle_y * 180 / PI, 0, 1, 0);
+  // drawArrow(4);
+  // glPopMatrix();
+
 
   // direction_arrow
   glColor3f(0.0f, 0.0f, 1.0f); // Blue
@@ -737,8 +756,9 @@ void display() {
   glColor3f(1.0f, 0.0f, 0.0f); // Red
   glPushMatrix();
   glTranslatef(ball.x_coord, ball.y_coord, CLEARANCE + ball.radius);
-  glRotatef(ball.rotation_angle_x * 180 / PI, 1, 0, 0);
-  glRotatef(ball.rotation_angle_y * 180 / PI, 0, 1, 0);
+  glRotatef(ball.rotation_angle_x * 180 / M_PI, 1, 0, 0);
+  glRotatef(ball.rotation_angle_y * 180 / M_PI, 0, 1, 0);
+  glRotatef(ball.rotation_angle_z * 180 / M_PI, 0, 0, 1);
   drawSphere(ball.radius, ball.sector_count, ball.stack_count);
   glPopMatrix();
 

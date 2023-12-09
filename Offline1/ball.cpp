@@ -1,4 +1,5 @@
 #include "vec.cpp"
+#include <bits/stdc++.h>
 
 #define BALL_ROTATION_ANGLE 0.05
 
@@ -19,6 +20,7 @@ public:
   double ball_rotation_angle;
 
   double rotation_angle_x, rotation_angle_y;
+  double rotation_angle_z;
 
   LastMove last_move;
 
@@ -35,12 +37,13 @@ public:
     x_coord = 0;
     y_coord = 0;
     radius = 1;
-    speed = 0.5;
+    speed = 0.3;
     move_angle_x = M_PI / 4;
     ball_rotation_angle = 0.05;
 
     rotation_angle_x = 0;
     rotation_angle_y = 0;
+    rotation_angle_z = 0;
 
     sector_count = 8;
     stack_count = 20;
@@ -61,8 +64,10 @@ public:
     this->speed = speed;
     this->move_angle_x = move_angle_x;
     this->ball_rotation_angle = ball_rotation_angle;
+
     this->rotation_angle_x = 0;
     this->rotation_angle_y = 0;
+    this->rotation_angle_z = 0;
 
     this->sector_count = 8;
     this->stack_count = 20;
@@ -94,11 +99,66 @@ public:
     }
   }
 
+  double changeInRotationAngleZ(Vec direction_vector, Vec pointing_vector,
+                                double angle) {
+    double change_in_z = 0.0;
+
+    Vec pointing_vector_xy = pointing_vector.getProjectionXYPlane();
+
+    if (pointing_vector_xy.getMagnitude() == 0.0) {
+      printf("I am zero\n");
+      return 0;
+    }
+
+    Vec rotation_axis = Vec(-direction_vector.y, direction_vector.x, 0);
+
+    double theta1 = pointing_vector_xy.angleBetweenVectors(direction_vector);
+    double theta2 = pointing_vector_xy.angleBetweenVectors(rotation_axis);
+
+    // printf("theta1: %lf\n", theta1 * 180 / M_PI);
+    // printf("theta2: %lf\n", theta2 * 180 / M_PI);
+
+    double ninety = M_PI / 2;
+
+    if (theta2 == ninety) {
+      printf("Theta2 is zero\n");
+      return 0;
+    }
+
+    // double angle_in_degree =angle * 180 / M_PI;
+    change_in_z = -angle * sin(theta1) * pointing_vector_xy.getMagnitude();
+    printf("change in z %lf\n", change_in_z);
+    if (theta2 > ninety) { // anticlockwise assuming forward, if backward, angle
+                           // is negative
+
+    } else { // clockwise assuming forward
+      change_in_z = -change_in_z;
+    }
+
+    return change_in_z;
+  }
+
   void rotateBall(double angle) {
+    // z needs to be computed differently, during rotation
+    double change_in_z =
+        changeInRotationAngleZ(Vec(cos(move_angle_x), sin(move_angle_x), 0),
+                               pointing_vector, angle) /
+        2.0;
+    // printf("change in z rotateBall %lf\n", change_in_z);
+    rotation_angle_z += change_in_z;
+
     Vec rotation_axis = Vec(-sin(move_angle_x), cos(move_angle_x), 0);
     prev_pointing_vector = pointing_vector;
     pointing_vector = pointing_vector.rotateAroundAxis(rotation_axis, angle)
                           .getNormalizedResult();
+
+    change_in_z =
+        changeInRotationAngleZ(Vec(cos(move_angle_x), sin(move_angle_x), 0),
+                               pointing_vector, angle / 2.0);
+    // printf("change in z rotateBall %lf\n", change_in_z);
+    rotation_angle_z += change_in_z;
+
+    // printf("rotation_angle_z: %lf\n", rotation_angle_z);
     prev_move_angle_x = move_angle_x;
   }
 
@@ -122,12 +182,12 @@ public:
     computeAngles();
 
     this->move_angle_x = temp_move_angle_x;
-    if(last_move == FORWARD) {
+    if (last_move == FORWARD) {
       rotateBall(angle);
     } else {
       rotateBall(-angle);
     }
-    
+
     computeAngles();
   }
 
