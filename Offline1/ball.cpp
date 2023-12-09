@@ -37,7 +37,7 @@ public:
     x_coord = 0;
     y_coord = 0;
     radius = 1;
-    speed = 0.3;
+    speed = 0.5;
     move_angle_x = M_PI / 4;
     ball_rotation_angle = 0.05;
 
