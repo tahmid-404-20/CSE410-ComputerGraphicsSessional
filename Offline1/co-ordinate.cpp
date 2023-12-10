@@ -1,4 +1,6 @@
+#pragma once
 #include <cmath>
+#include "vec.cpp"
 
 class Point3D {
 public:
@@ -13,6 +15,16 @@ public:
     this->y = y;
     this->z = z;
   }
+
+  Vec getVector() {
+  return Vec(this->x,this->y,this->z);
+}
+
+void assignVector(Vec v) {
+  this->x = v.x;
+  this->y = v.y;
+  this->z = v.z;
+}
 };
 
 Point3D getCartesianCoordinates3D(double r, double phi, double theta) {

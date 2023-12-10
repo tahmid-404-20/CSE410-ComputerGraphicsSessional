@@ -1,5 +1,5 @@
 #include <cmath>
-#include <bits/stdc++.h>
+// #include <bits/stdc++.h>
 #pragma once
 class Vec {
 public:
@@ -90,45 +90,7 @@ public:
 
     return v1 + v2 + v3;
   }
-
-  double angleBetweenVectors(Vec vec) {
-    double dotProduct = getDotProduct(vec);
-    double magnitudeProduct = getMagnitude() * vec.getMagnitude();
-
-    // writing it for the sake of this offline, where the projection in the xy plane can be zero
-    if( magnitudeProduct == 0.0) {
-      return M_PI / 2;
-    }
-
-    double value = dotProduct / magnitudeProduct;
-    
-    if(value > 1.0) {
-      value = 1.0;
-    } else if(value < -1.0) {
-      value = -1.0;
-    }   
-
-    return acosf128(value);
-  }
-
-  Vec getProjectionXYPlane() {
-    Vec result;
-    result.x = x;
-    result.y = y;
-    result.z = 0;
-
-    return result;
-  }
 };
-
-// int main() {
-//   Vec a(1,0,0);
-//   Vec b(-1/2.0,1,0);
-//   Vec c(-1/2.0,-1,0);
-
-//   printf("%lf\n", a.angleBetweenVectors(b) * 180 / M_PI);
-//   printf("%lf\n", a.angleBetweenVectors(c) * 180 / M_PI);
-// }
 
 
 // int main() {

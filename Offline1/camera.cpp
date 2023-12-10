@@ -32,6 +32,22 @@ public:
     setUpVector(Vec(ux, uy, uz).getNormalizedResult());
   }
 
+  // a constructor to set the camera position, look position and up vector
+  Camera(double ex, double ey, double ez, double lx, double ly, double lz,
+         double ux, double uy, double uz) {
+    this->ex = ex;
+    this->ey = ey;
+    this->ez = ez;
+    this->lx = lx;
+    this->ly = ly;
+    this->lz = lz;
+    this->ux = ux;
+    this->uy = uy;
+    this->uz = uz;
+
+    setUpVector(Vec(ux, uy, uz).getNormalizedResult());
+  }
+
   //  setters
   void setUpVector(Vec up) {
     ux = up.x;

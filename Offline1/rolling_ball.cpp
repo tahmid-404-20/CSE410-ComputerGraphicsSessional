@@ -3,6 +3,7 @@
 #include "co-ordinate.cpp"
 #include <bits/stdc++.h>
 #include <unordered_map>
+#include <vector>
 
 #ifdef __linux__
 #include <GL/glut.h>
@@ -121,12 +122,6 @@ double predictCollisionTime(Ball &ball, Wall wall) {
   return t;
 }
 
-void updateCollisionMap(Event event) {
-  collisionMap[event.id] = event;
-  glutTimerFunc(event.time - simulationTime, ballMoveMentEventDriven, event.id);
-  simulationTime = event.time;
-}
-
 void initializeSimulationMode() {
   ball.collision_count = 0;
   collisionTracksCurrentSimulation = 0;
@@ -143,8 +138,7 @@ void initializeSimulationMode() {
     wall = (Wall)i;
     double t = predictCollisionTime(ball, wall);
     if (t - 0.0 >= 0.00000001) {
-      Event event(simulationTime + t, ball.collision_count,
-                  collisionTracksCurrentSimulation++);
+      Event event(t, ball.collision_count, collisionTracksCurrentSimulation++);
       eventQueue.push(event);
     }
   }
@@ -153,10 +147,8 @@ void initializeSimulationMode() {
   Event event = eventQueue.top();
   eventQueue.pop();
 
-  updateCollisionMap(event);
-  // collisionMap[event.id] = event;
-  // glutTimerFunc(event.time - simulationTime, ballMoveMentEventDriven, event.id);
-  // simulationTime = event.time;
+  collisionMap[event.id] = event;
+  glutTimerFunc(event.time, ballMoveMentEventDriven, event.id);
 }
 
 void ballMoveMentEventDriven(int hashIndex) {
@@ -255,8 +247,7 @@ void predictNextCollision(Ball &ball) {
     wall = (Wall)i;
     double t = predictCollisionTime(ball, wall);
     if (t - 0.0 >= 0.00000001) {
-      Event event(simulationTime + t, ball.collision_count,
-                  collisionTracksCurrentSimulation++);
+      Event event(t, ball.collision_count, collisionTracksCurrentSimulation++);
       eventQueue.push(event);
     }
   }
@@ -271,7 +262,8 @@ void predictNextCollision(Ball &ball) {
       continue;
     }
 
-    updateCollisionMap(event);
+    collisionMap[event.id] = event;
+    glutTimerFunc(event.time, ballMoveMentEventDriven, event.id);
     break;
   }
 }
@@ -439,6 +431,62 @@ void drawCheckers(double a) {
 }
 
 bool show = false;
+
+void drawSphere3(Ball &ball) {
+  vector<vector<PointPair>> points = ball.point_pair_array;
+
+  int stackCount = ball.stack_count;
+  int sectorCount = ball.sector_count;
+
+  bool alterColor = false;
+
+  bool isRed = false;
+  for (int stackStep = 0; stackStep < stackCount; stackStep++) {
+    if (stackStep * 2 >= stackCount) {
+      isRed = true;
+    }
+
+    for (int sectorStep = 0; sectorStep < sectorCount; sectorStep++) {
+      isRed = !isRed;
+
+      if (isRed) {
+        glColor3f(1.0f, 0.0f, 0.0f); // Red
+      } else {
+        glColor3f(0.0f, 1.0f, 0.0f); // Green
+      }
+
+      // anticlockWise, p1,p2,p3,p4
+      PointPair pp1 = points[stackStep][sectorStep];
+      PointPair pp2 = points[stackStep][(sectorStep + 1) % sectorCount];
+
+      Point3D p1 = pp1.p1;
+      Point3D p2 = pp1.p2;
+      Point3D p3 = pp2.p2;
+      Point3D p4 = pp2.p1;
+
+      // first and last stack contains only 1 triangle
+      if (stackStep != (stackCount - 1)) {
+        glBegin(GL_TRIANGLES);
+        {
+          glVertex3f(p1.x, p1.y, p1.z);
+          glVertex3f(p2.x, p2.y, p2.z);
+          glVertex3f(p3.x, p3.y, p3.z);
+        }
+        glEnd();
+      }
+
+      if (stackStep != 0) {
+        glBegin(GL_TRIANGLES);
+        {
+          glVertex3f(p1.x, p1.y, p1.z);
+          glVertex3f(p3.x, p3.y, p3.z);
+          glVertex3f(p4.x, p4.y, p4.z);
+        }
+        glEnd();
+      }
+    }
+  }
+}
 
 void drawSphere(double r, int sectorCount, int stackCount) {
   // both ints are even
@@ -727,21 +775,11 @@ void display() {
   drawNGonBoundary(BOUNDARY_DIMENSION, BOUNDARY_RADIUS, BOUNDARY_HEIGHT);
 
   // up_arrow on ball, cyan color
-  // glColor3f(0.0f, 1.0f, 1.0f); // Cyan
-  // glPushMatrix();
-  // glTranslatef(ball.x_coord, ball.y_coord, ball.radius + CLEARANCE);
-  // drawArrow(3);
-  // glPopMatrix();
-
-  // // pointing_vectorcl
-  // glColor3f(1.0f, 1.0f, 0.0f); // Yellow
-  // glPushMatrix();
-  // glTranslatef(ball.x_coord, ball.y_coord, ball.radius + CLEARANCE);
-  // glRotatef(ball.rotation_angle_x * 180 / PI, 1, 0, 0);
-  // glRotatef(ball.rotation_angle_y * 180 / PI, 0, 1, 0);
-  // drawArrow(4);
-  // glPopMatrix();
-
+  glColor3f(0.0f, 1.0f, 1.0f); // Cyan
+  glPushMatrix();
+  glTranslatef(ball.x_coord, ball.y_coord, ball.radius + CLEARANCE);
+  drawArrow(3);
+  glPopMatrix();
 
   // direction_arrow
   glColor3f(0.0f, 0.0f, 1.0f); // Blue
@@ -756,10 +794,10 @@ void display() {
   glColor3f(1.0f, 0.0f, 0.0f); // Red
   glPushMatrix();
   glTranslatef(ball.x_coord, ball.y_coord, CLEARANCE + ball.radius);
-  glRotatef(ball.rotation_angle_x * 180 / M_PI, 1, 0, 0);
-  glRotatef(ball.rotation_angle_y * 180 / M_PI, 0, 1, 0);
-  glRotatef(ball.rotation_angle_z * 180 / M_PI, 0, 0, 1);
-  drawSphere(ball.radius, ball.sector_count, ball.stack_count);
+  // glRotatef(ball.rotation_angle_x * 180 / PI, 1, 0, 0);
+  // glRotatef(ball.rotation_angle_y * 180 / PI, 0, 1, 0);
+  // drawSphere(ball.radius, ball.sector_count, ball.stack_count);
+  drawSphere3(ball);
   glPopMatrix();
 
   glutSwapBuffers();
@@ -787,7 +825,7 @@ int main(int argc, char **argv) {
   glutInitWindowPosition(750,
                          250); // Position the window's initial top-left corner
   glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
-  glutCreateWindow("Test");
+  glutCreateWindow("Rolling Ball - 1905002");
   glutDisplayFunc(display);
   glutKeyboardFunc(keyboardListener);
   glutSpecialFunc(keyboardSpecialListener);

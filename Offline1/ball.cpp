@@ -1,9 +1,32 @@
+#include "co-ordinate.cpp"
 #include "vec.cpp"
-#include <bits/stdc++.h>
+#include <vector>
 
 #define BALL_ROTATION_ANGLE 0.05
 
 enum LastMove { FORWARD, BACKWARD };
+
+class Sector {
+public:
+  Point3D p1, p2, p3, p4;
+
+  Sector(Point3D p1, Point3D p2, Point3D p3, Point3D p4) {
+    this->p1 = p1;
+    this->p2 = p2;
+    this->p3 = p3;
+    this->p4 = p4;
+  }
+};
+
+class PointPair {
+public:
+  Point3D p1, p2;
+
+  PointPair(Point3D p1, Point3D p2) {
+    this->p1 = p1;
+    this->p2 = p2;
+  }
+};
 
 class Ball {
 private:
@@ -20,7 +43,6 @@ public:
   double ball_rotation_angle;
 
   double rotation_angle_x, rotation_angle_y;
-  double rotation_angle_z;
 
   LastMove last_move;
 
@@ -33,6 +55,13 @@ public:
 
   int collision_count;
 
+  // points of the ball, its a vector of vectors of Point3D
+  std::vector<std::vector<Sector>> points;
+  std::vector<std::vector<PointPair>> point_pair_array;
+
+  void generatePointsBall();
+  void generatePointsBall2();
+
   Ball() {
     x_coord = 0;
     y_coord = 0;
@@ -43,7 +72,6 @@ public:
 
     rotation_angle_x = 0;
     rotation_angle_y = 0;
-    rotation_angle_z = 0;
 
     sector_count = 8;
     stack_count = 20;
@@ -53,6 +81,9 @@ public:
     last_move = FORWARD;
 
     collision_count = 0;
+
+    generatePointsBall();
+    generatePointsBall2();
   }
 
   // constructor to set co-ordinates, direction and speed
@@ -64,10 +95,8 @@ public:
     this->speed = speed;
     this->move_angle_x = move_angle_x;
     this->ball_rotation_angle = ball_rotation_angle;
-
     this->rotation_angle_x = 0;
     this->rotation_angle_y = 0;
-    this->rotation_angle_z = 0;
 
     this->sector_count = 8;
     this->stack_count = 20;
@@ -76,6 +105,9 @@ public:
     this->last_move = FORWARD;
 
     this->collision_count = 0;
+
+    generatePointsBall();
+    generatePointsBall2();
   }
 
   void computeAngles() {
@@ -99,73 +131,50 @@ public:
     }
   }
 
-  double changeInRotationAngleZ(Vec direction_vector, Vec pointing_vector,
-                                double angle) {
-    double change_in_z = 0.0;
+  void rotateBall3(double angle) {
+    Vec rotation_axis = Vec(-sin(move_angle_x), cos(move_angle_x), 0);
 
-    Vec pointing_vector_xy = pointing_vector.getProjectionXYPlane();
-
-    if (pointing_vector_xy.getMagnitude() == 0.0) {
-      printf("I am zero\n");
-      return 0;
+    for (int i = 0; i < point_pair_array.size(); i++) {
+      for (int j = 0; j < point_pair_array[i].size(); j++) {
+        point_pair_array[i][j].p1.assignVector(
+            point_pair_array[i][j].p1.getVector().rotateAroundAxis(
+                rotation_axis, angle));
+        point_pair_array[i][j].p2.assignVector(
+            point_pair_array[i][j].p2.getVector().rotateAroundAxis(
+                rotation_axis, angle));
+      }
     }
+  }
 
-    Vec rotation_axis = Vec(-direction_vector.y, direction_vector.x, 0);
+  void rotateBall2(double angle) {
+    Vec rotation_axis = Vec(-sin(move_angle_x), cos(move_angle_x), 0);
 
-    double theta1 = pointing_vector_xy.angleBetweenVectors(direction_vector);
-    double theta2 = pointing_vector_xy.angleBetweenVectors(rotation_axis);
-
-    // printf("theta1: %lf\n", theta1 * 180 / M_PI);
-    // printf("theta2: %lf\n", theta2 * 180 / M_PI);
-
-    double ninety = M_PI / 2;
-
-    if (theta2 == ninety) {
-      printf("Theta2 is zero\n");
-      return 0;
+    for (int i = 0; i < points.size(); i++) {
+      for (int j = 0; j < points[i].size(); j++) {
+        points[i][j].p1.assignVector(
+            points[i][j].p1.getVector().rotateAroundAxis(rotation_axis, angle));
+        points[i][j].p2.assignVector(
+            points[i][j].p2.getVector().rotateAroundAxis(rotation_axis, angle));
+        points[i][j].p3.assignVector(
+            points[i][j].p3.getVector().rotateAroundAxis(rotation_axis, angle));
+        points[i][j].p4.assignVector(
+            points[i][j].p4.getVector().rotateAroundAxis(rotation_axis, angle));
+      }
     }
-
-    // double angle_in_degree =angle * 180 / M_PI;
-    change_in_z = -angle * sin(theta1) * pointing_vector_xy.getMagnitude();
-    printf("change in z %lf\n", change_in_z);
-    if (theta2 > ninety) { // anticlockwise assuming forward, if backward, angle
-                           // is negative
-
-    } else { // clockwise assuming forward
-      change_in_z = -change_in_z;
-    }
-
-    return change_in_z;
   }
 
   void rotateBall(double angle) {
-    // z needs to be computed differently, during rotation
-    double change_in_z =
-        changeInRotationAngleZ(Vec(cos(move_angle_x), sin(move_angle_x), 0),
-                               pointing_vector, angle) /
-        2.0;
-    // printf("change in z rotateBall %lf\n", change_in_z);
-    rotation_angle_z += change_in_z;
-
     Vec rotation_axis = Vec(-sin(move_angle_x), cos(move_angle_x), 0);
     prev_pointing_vector = pointing_vector;
     pointing_vector = pointing_vector.rotateAroundAxis(rotation_axis, angle)
                           .getNormalizedResult();
-
-    change_in_z =
-        changeInRotationAngleZ(Vec(cos(move_angle_x), sin(move_angle_x), 0),
-                               pointing_vector, angle / 2.0);
-    // printf("change in z rotateBall %lf\n", change_in_z);
-    rotation_angle_z += change_in_z;
-
-    // printf("rotation_angle_z: %lf\n", rotation_angle_z);
     prev_move_angle_x = move_angle_x;
   }
 
   void fixPointingVector() {
     pointing_vector = prev_pointing_vector;
 
-    computeAngles();
+    // computeAngles();
 
     double angle = speed / radius / 2.0; // avg before and after collision
 
@@ -174,21 +183,21 @@ public:
 
     // rotate at the direction before collision
     if (last_move == FORWARD) {
-      rotateBall(angle);
+      rotateBall3(angle);
     } else {
-      rotateBall(-angle);
+      rotateBall3(-angle);
     }
 
-    computeAngles();
+    // computeAngles();
 
     this->move_angle_x = temp_move_angle_x;
     if (last_move == FORWARD) {
-      rotateBall(angle);
+      rotateBall3(angle);
     } else {
-      rotateBall(-angle);
+      rotateBall3(-angle);
     }
 
-    computeAngles();
+    // computeAngles();
   }
 
   void moveForwardOrBackward(bool forward = true) {
@@ -210,7 +219,58 @@ public:
     x_coord += d_x;
     y_coord += d_y;
 
-    rotateBall(angle);
+    rotateBall3(angle);
     computeAngles();
   }
 };
+
+void Ball ::generatePointsBall() {
+  for (int stackStep = 0; stackStep < stack_count; stackStep++) {
+    double phi1 = 90.0 - (180.0 * stackStep) / stack_count;
+    double phi2 = 90.0 - (180.0 * (stackStep + 1)) / stack_count;
+
+    points.push_back(std::vector<Sector>());
+
+    for (int sectorStep = 0; sectorStep < sector_count; sectorStep++) {
+      double theta1 = (360.0 * sectorStep) / sector_count;
+      double theta2 = (360.0 * (sectorStep + 1)) / sector_count;
+
+      // anticlockWise, p1,p2,p3,p4
+
+      // ph1,theta1
+      Point3D p1 = getCartesianCoordinates3D(radius, phi1, theta1);
+
+      // phi2, theta1
+      Point3D p2 = getCartesianCoordinates3D(radius, phi2, theta1);
+
+      // phi2, theta2
+      Point3D p3 = getCartesianCoordinates3D(radius, phi2, theta2);
+
+      // phi1, theta2
+      Point3D p4 = getCartesianCoordinates3D(radius, phi1, theta2);
+
+      points[stackStep].push_back(Sector(p1, p2, p3, p4));
+    }
+  }
+}
+
+
+void Ball::generatePointsBall2() {
+  for (int stackStep = 0; stackStep < stack_count; stackStep++) {
+    double phi1 = 90.0 - (180.0 * stackStep) / stack_count;
+    double phi2 = 90.0 - (180.0 * (stackStep + 1)) / stack_count;
+
+
+    point_pair_array.push_back(std::vector<PointPair>());
+
+    for (int sectorStep = 0; sectorStep < sector_count; sectorStep++) {
+      double theta = (360.0 * sectorStep) / sector_count;
+
+      // anticlockWise, p1,p2,p3,p4
+      Point3D p1 = getCartesianCoordinates3D(radius, phi1, theta);
+      Point3D p2 = getCartesianCoordinates3D(radius, phi2, theta);
+
+      point_pair_array[stackStep].push_back(PointPair(p1, p2));
+    }
+  }
+}
