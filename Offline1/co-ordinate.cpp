@@ -1,6 +1,6 @@
 #pragma once
-#include <cmath>
 #include "vec.cpp"
+#include <cmath>
 
 class Point3D {
 public:
@@ -16,15 +16,46 @@ public:
     this->z = z;
   }
 
-  Vec getVector() {
-  return Vec(this->x,this->y,this->z);
-}
+  Vec getVector() { return Vec(this->x, this->y, this->z); }
 
-void assignVector(Vec v) {
-  this->x = v.x;
-  this->y = v.y;
-  this->z = v.z;
-}
+  void assignVector(Vec v) {
+    this->x = v.x;
+    this->y = v.y;
+    this->z = v.z;
+  }
+};
+
+class Point2D {
+public:
+  double x, y;
+  Point2D() {
+    x = 0;
+    y = 0;
+  }
+  Point2D(double x, double y) {
+    this->x = x;
+    this->y = y;
+  }
+};
+
+class PointPair2D {
+public:
+  Point2D p1, p2;
+
+  PointPair2D(Point2D p1, Point2D p2) {
+    this->p1 = p1;
+    this->p2 = p2;
+  }
+};
+
+class PointPair {
+public:
+  Point3D p1, p2;
+
+  PointPair(Point3D p1, Point3D p2) {
+    this->p1 = p1;
+    this->p2 = p2;
+  }
 };
 
 Point3D getCartesianCoordinates3D(double r, double phi, double theta) {

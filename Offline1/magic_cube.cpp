@@ -1,5 +1,6 @@
 #include "camera.cpp"
 #include "co-ordinate.cpp"
+#include "shapes.cpp"
 #include <bits/stdc++.h>
 
 #ifdef __linux__
@@ -10,8 +11,13 @@
 #endif
 
 #define MAX_LENGTH_TRIANGLE 1
-#define CHANGE_AMOUNT 0.1
+#define CHANGE_AMOUNT 0.05
+#define CHANGE_AMOUNT_RADIUS                                                   \
+  CHANGE_AMOUNT / sqrt(3) // the inscribed sphere has radius a/sqrt(3) [triangle
+                          // is  (a,0,0), (0,a,0), (0,0,a)]
 #define OBJECT_ROTATION_ANGLE 0.1
+
+#define OBJECT_SECTORS 200
 
 double step = 0.5;
 double rotation_angle = 0.05;
@@ -19,7 +25,11 @@ double rotation_angle = 0.05;
 Camera camera(2, 2, 2, 0, 0, 0, 0, 0, 1);
 
 double triangle_length = 1;
+double sphere_radius = 0;
+
 double current_object_rotation_angle = 0;
+
+Cylinder cylinder(0.0, MAX_LENGTH_TRIANGLE *sqrt(2), OBJECT_SECTORS);
 
 void init() {
   printf("Do your initialization here\n");
@@ -35,6 +45,8 @@ void idle() {
   glutPostRedisplay(); // Post a re-paint request to activate display(),
                        // variable set koire then call koro display
 }
+
+bool show = false;
 
 void keyboardSpecialListener(int key, int x, int y) {
   switch (key) {
@@ -117,17 +129,56 @@ void keyboardListener(unsigned char key, int x, int y) {
 
   case ',':
     printf(", pressed\n");
+    printf("Triangle length: %lf CHANGE_AMOUNT %lf\n", triangle_length, CHANGE_AMOUNT);
     {
-      if (triangle_length >= CHANGE_AMOUNT) {
+      if (triangle_length > 0) {
         triangle_length -= CHANGE_AMOUNT;
+        sphere_radius += CHANGE_AMOUNT_RADIUS;
+
+        if (sphere_radius > MAX_LENGTH_TRIANGLE / sqrt(3)) {
+          sphere_radius = MAX_LENGTH_TRIANGLE / sqrt(3);
+        }
+
+        if(triangle_length < 0) {
+          triangle_length = 0;
+        }
+
+        cylinder.updateRadiusAndHeight(sphere_radius,
+                                       triangle_length * sqrt(2));
+        //  print the values
+        printf("triangle_length: %lf\n", triangle_length);
+        printf("sphere_radius: %lf\n", sphere_radius);
+        printf("cylinder.height: %lf\n", cylinder.height);
+
+        if (!show) {
+          printf("cylinder.points.size(): %d\n", cylinder.points.size());
+          show = true;
+        }
       }
     }
     break;
   case '.':
     printf(". pressed\n");
     {
-      if (triangle_length <= MAX_LENGTH_TRIANGLE - CHANGE_AMOUNT) {
+      if (triangle_length <= MAX_LENGTH_TRIANGLE) {
         triangle_length += CHANGE_AMOUNT;
+        sphere_radius -= CHANGE_AMOUNT_RADIUS;
+
+        if (sphere_radius < 0) {
+          sphere_radius = 0.0;
+        }
+
+        if(triangle_length > MAX_LENGTH_TRIANGLE) {
+          triangle_length = MAX_LENGTH_TRIANGLE;
+        }
+
+        cylinder.updateRadiusAndHeight(sphere_radius,
+                                       triangle_length * sqrt(2));
+
+        //  print the values
+        printf("triangle_length: %lf\n", triangle_length);
+        printf("sphere_radius: %lf\n", sphere_radius);
+        printf("cylinder.height: %lf\n", cylinder.height);
       }
     }
     break;
@@ -160,6 +211,63 @@ void drawTriangle(double a) {
     glVertex3f(0, 0, a);
   }
   glEnd();
+}
+
+void drawCylinderSegment(Cylinder &cylinder) {
+  std::vector<Point2D> points = cylinder.points;
+  double height = cylinder.height;
+
+  for (int i = 0; i < points.size(); i++) {
+    Point2D p1 = points[i];
+    Point2D p2 = points[(i + 1) % points.size()];
+
+    glBegin(GL_QUADS);
+    {
+      glVertex3f(p1.x, p1.y, height / 2.0);
+      glVertex3f(p1.x, p1.y, -height / 2.0);
+      glVertex3f(p2.x, p2.y, -height / 2.0);
+      glVertex3f(p2.x, p2.y, height / 2.0);
+    }
+    glEnd();
+  }
+}
+
+void drawACylinder(Cylinder &cylinder) {
+  glPushMatrix();
+  glRotatef(-45, 0, 1, 0);
+  glTranslatef(triangle_length / sqrt(2), 0, 0);
+  drawCylinderSegment(cylinder);
+  glPopMatrix();
+}
+
+void drawAllCylinders(Cylinder &cylinder) {
+  for (int i = 0; i < 4; i++) {
+    glPushMatrix();
+    {
+      glRotatef(i * 90, 0, 0, 1);
+      drawACylinder(cylinder);
+    }
+    glPopMatrix();
+
+    for(int i=0;i<4;i++) {
+      glPushMatrix();
+      {
+        glRotatef(45 + i * 90, 0, 0, 1);
+        glRotatef(90, 1, 0, 0);
+        glTranslatef(triangle_length / sqrt(2), 0, 0);
+        drawCylinderSegment(cylinder);
+      }
+      glPopMatrix();
+    }
+
+    glPushMatrix();
+    {
+      glRotatef(i * 90, 0, 0, 1);
+      glRotatef(180, 1, 0, 0);
+      drawACylinder(cylinder);
+    }
+    glPopMatrix();
+  }
 }
 
 // a should be less than MAX_LENGTH_TRIANGLE
@@ -215,6 +323,13 @@ void display() {
   glPushMatrix();
   glRotatef(current_object_rotation_angle * 180 / M_PI, 0, 0, 1);
   drawOctahedron(triangle_length);
+  glPopMatrix();
+
+  // set color to yellow
+  glColor3f(1.0f, 1.0f, 0.0f);
+  glPushMatrix();
+  glRotatef(current_object_rotation_angle * 180 / M_PI, 0, 0, 1);
+  drawAllCylinders(cylinder);
   glPopMatrix();
 
   glutSwapBuffers();

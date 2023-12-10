@@ -114,11 +114,6 @@ double predictCollisionTime(Ball &ball, Wall wall) {
 
   t *= SIMULATION_CALL_INTERVAL;
 
-  // // t should be integer multiple of SIMULATION_CALL_INTERVAL
-  // if (t - (int)t >= 0.00000001) {
-  //   t = (int)t + SIMULATION_CALL_INTERVAL;
-  // }
-
   return t;
 }
 
@@ -430,9 +425,7 @@ void drawCheckers(double a) {
   }
 }
 
-bool show = false;
-
-void drawSphere3(Ball &ball) {
+void drawSphere(Ball &ball) {
   vector<vector<PointPair>> points = ball.point_pair_array;
 
   int stackCount = ball.stack_count;
@@ -486,85 +479,6 @@ void drawSphere3(Ball &ball) {
       }
     }
   }
-}
-
-void drawSphere(double r, int sectorCount, int stackCount) {
-  // both ints are even
-  bool alterColor = false;
-
-  bool isRed = false;
-  for (int stackStep = 0; stackStep < stackCount; stackStep++) {
-    double phi1 = 90.0 - (180.0 * stackStep) / stackCount;
-    double phi2 = 90.0 - (180.0 * (stackStep + 1)) / stackCount;
-
-    if (show)
-      printf("phi1: %lf, phi2: %lf\n", phi1, phi2);
-
-    if (stackStep * 2 >= stackCount) {
-      isRed = true;
-    }
-
-    for (int sectorStep = 0; sectorStep < sectorCount; sectorStep++) {
-      double theta1 = (360.0 * sectorStep) / sectorCount;
-      double theta2 = (360.0 * (sectorStep + 1)) / sectorCount;
-
-      if (show)
-        printf("theta1: %lf, theta2: %lf\n", theta1, theta2);
-
-      isRed = !isRed;
-
-      if (isRed) {
-        glColor3f(1.0f, 0.0f, 0.0f); // Red
-      } else {
-        glColor3f(0.0f, 1.0f, 0.0f); // Green
-      }
-
-      // anticlockWise, p1,p2,p3,p4
-
-      // ph1,theta1
-      Point3D p1 = getCartesianCoordinates3D(r, phi1, theta1);
-
-      // phi2, theta1
-      Point3D p2 = getCartesianCoordinates3D(r, phi2, theta1);
-
-      // phi2, theta2
-      Point3D p3 = getCartesianCoordinates3D(r, phi2, theta2);
-
-      // phi1, theta2
-      Point3D p4 = getCartesianCoordinates3D(r, phi1, theta2);
-
-      if (show) {
-        printf("p1: %lf %lf %lf\n", p1.x, p1.y, p1.z);
-        printf("p2: %lf %lf %lf\n", p2.x, p2.y, p2.z);
-        printf("p3: %lf %lf %lf\n", p3.x, p3.y, p3.z);
-        printf("p4: %lf %lf %lf\n", p4.x, p4.y, p4.z);
-      }
-
-      // first and last stack contains only 1 triangle
-      if (stackStep != (stackCount - 1)) {
-        glBegin(GL_TRIANGLES);
-        {
-          glVertex3f(p1.x, p1.y, p1.z);
-          glVertex3f(p2.x, p2.y, p2.z);
-          glVertex3f(p3.x, p3.y, p3.z);
-        }
-        glEnd();
-      }
-
-      if (stackStep != 0) {
-        glBegin(GL_TRIANGLES);
-        {
-          glVertex3f(p1.x, p1.y, p1.z);
-          glVertex3f(p3.x, p3.y, p3.z);
-          glVertex3f(p4.x, p4.y, p4.z);
-        }
-        glEnd();
-      }
-      if (show)
-        printf("\n");
-    }
-  }
-  show = false;
 }
 
 void drawCone(double r, double h, int sectorCount) {
@@ -663,19 +577,11 @@ void drawBoundaryWallOfRadius(double width, double height, double a) {
   glPopMatrix();
 }
 
-bool ok = true;
-
 void drawNGonBoundary(int n, double radius, double wallHeight) {
   double angle = 360.0 / n;
 
   double theta = angle / 2.0;
   double width = 2 * radius * tan(theta * PI / 180.0);
-
-  if (ok) {
-    printf("angle: %lf, theta: %lf, width: %lf radius: %lf tan: %lf\n", angle,
-           theta, width, radius, tan(theta * PI / 360.0));
-    ok = false;
-  }
 
   for (int i = 0; i < n; i++) {
     glPushMatrix();
@@ -794,10 +700,7 @@ void display() {
   glColor3f(1.0f, 0.0f, 0.0f); // Red
   glPushMatrix();
   glTranslatef(ball.x_coord, ball.y_coord, CLEARANCE + ball.radius);
-  // glRotatef(ball.rotation_angle_x * 180 / PI, 1, 0, 0);
-  // glRotatef(ball.rotation_angle_y * 180 / PI, 0, 1, 0);
-  // drawSphere(ball.radius, ball.sector_count, ball.stack_count);
-  drawSphere3(ball);
+  drawSphere(ball);
   glPopMatrix();
 
   glutSwapBuffers();
