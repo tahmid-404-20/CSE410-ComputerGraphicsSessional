@@ -30,6 +30,7 @@ double sphere_radius = 0;
 double current_object_rotation_angle = 0;
 
 Cylinder cylinder(0.0, MAX_LENGTH_TRIANGLE *sqrt(2), OBJECT_SECTORS);
+Sphere sphere(0.0, OBJECT_SECTORS, OBJECT_SECTORS);
 
 void init() {
   printf("Do your initialization here\n");
@@ -129,7 +130,8 @@ void keyboardListener(unsigned char key, int x, int y) {
 
   case ',':
     printf(", pressed\n");
-    printf("Triangle length: %lf CHANGE_AMOUNT %lf\n", triangle_length, CHANGE_AMOUNT);
+    printf("Triangle length: %lf CHANGE_AMOUNT %lf\n", triangle_length,
+           CHANGE_AMOUNT);
     {
       if (triangle_length > 0) {
         triangle_length -= CHANGE_AMOUNT;
@@ -139,12 +141,13 @@ void keyboardListener(unsigned char key, int x, int y) {
           sphere_radius = MAX_LENGTH_TRIANGLE / sqrt(3);
         }
 
-        if(triangle_length < 0) {
+        if (triangle_length < 0) {
           triangle_length = 0;
         }
 
         cylinder.updateRadiusAndHeight(sphere_radius,
                                        triangle_length * sqrt(2));
+        sphere.update_radius(sphere_radius);
         //  print the values
         printf("triangle_length: %lf\n", triangle_length);
         printf("sphere_radius: %lf\n", sphere_radius);
@@ -168,12 +171,14 @@ void keyboardListener(unsigned char key, int x, int y) {
           sphere_radius = 0.0;
         }
 
-        if(triangle_length > MAX_LENGTH_TRIANGLE) {
+        if (triangle_length > MAX_LENGTH_TRIANGLE) {
           triangle_length = MAX_LENGTH_TRIANGLE;
         }
 
         cylinder.updateRadiusAndHeight(sphere_radius,
                                        triangle_length * sqrt(2));
+
+        sphere.update_radius(sphere_radius);
 
         //  print the values
         printf("triangle_length: %lf\n", triangle_length);
@@ -213,6 +218,32 @@ void drawTriangle(double a) {
   glEnd();
 }
 
+void drawSphereSegment(Sphere &sphere) {
+  std::vector<std::vector<Point3D>> points = sphere.points;
+
+  for (int i = 0; i < points.size() - 1; i++) { // stacks
+    std::vector<Point3D> points_on_sector = points[i];
+    std::vector<Point3D> points_on_next_sector = points[i + 1];
+
+    for (int j = 0; j < points_on_sector.size() - 1; j++) {
+      Point3D p1 = points_on_sector[j];
+      Point3D p2 = points_on_sector[j + 1];
+      Point3D p3 = points_on_next_sector[j];
+      Point3D p4 = points_on_next_sector[j + 1];
+
+      // anti-clockwise p1, p3, p4, p2
+      glBegin(GL_QUADS);
+      {
+        glVertex3f(p1.x, p1.y, p1.z);
+        glVertex3f(p3.x, p3.y, p3.z);
+        glVertex3f(p4.x, p4.y, p4.z);
+        glVertex3f(p2.x, p2.y, p2.z);
+      }
+      glEnd();
+    }
+  }
+}
+
 void drawCylinderSegment(Cylinder &cylinder) {
   std::vector<Point2D> points = cylinder.points;
   double height = cylinder.height;
@@ -232,12 +263,48 @@ void drawCylinderSegment(Cylinder &cylinder) {
   }
 }
 
+void drawASphere(Sphere &sphere) {
+  glPushMatrix();
+  glTranslatef(0, 0, triangle_length);
+  drawSphereSegment(sphere);
+  glPopMatrix();
+}
+
 void drawACylinder(Cylinder &cylinder) {
   glPushMatrix();
   glRotatef(-45, 0, 1, 0);
   glTranslatef(triangle_length / sqrt(2), 0, 0);
   drawCylinderSegment(cylinder);
   glPopMatrix();
+}
+
+void drawAllSpheres(Sphere &sphere) {
+  // top and bottom are red colors
+  glColor3f(1.0f, 0.0f, 0.0f);
+  glPushMatrix();
+  drawASphere(sphere);
+  glPopMatrix();
+
+  glPushMatrix();
+  glRotatef(180, 1, 0, 0);
+  drawASphere(sphere);
+  glPopMatrix();
+
+  for(int i=0;i<4;i++) {
+    if( i % 2 == 0) {
+      // blue
+      glColor3f(0.0f, 0.0f, 1.0f);
+    } else {
+      // green
+      glColor3f(0.0f, 1.0f, 0.0f);
+    }
+    glPushMatrix();
+    glRotatef(i*90, 0, 0, 1);
+    glRotatef(90, 1, 0, 0);
+    drawASphere(sphere);
+    glPopMatrix();
+  
+  }
 }
 
 void drawAllCylinders(Cylinder &cylinder) {
@@ -249,7 +316,7 @@ void drawAllCylinders(Cylinder &cylinder) {
     }
     glPopMatrix();
 
-    for(int i=0;i<4;i++) {
+    for (int i = 0; i < 4; i++) {
       glPushMatrix();
       {
         glRotatef(45 + i * 90, 0, 0, 1);
@@ -315,8 +382,8 @@ void display() {
   gluLookAt(camera.ex, camera.ey, camera.ez, camera.lx, camera.ly, camera.lz,
             camera.ux, camera.uy, camera.uz);
 
-  glColor3f(0.0f, 0.0f, 1.0f); // Green
-  drawAxes();
+  // glColor3f(0.0f, 0.0f, 1.0f); // Green
+  // drawAxes();
 
   // set color to cyan
   glColor3f(0.0f, 1.0f, 1.0f);
@@ -325,11 +392,16 @@ void display() {
   drawOctahedron(triangle_length);
   glPopMatrix();
 
-  // set color to yellow
+  // // set color to yellow
   glColor3f(1.0f, 1.0f, 0.0f);
   glPushMatrix();
   glRotatef(current_object_rotation_angle * 180 / M_PI, 0, 0, 1);
   drawAllCylinders(cylinder);
+  glPopMatrix();
+
+  glPushMatrix();
+  glRotatef(current_object_rotation_angle * 180 / M_PI, 0, 0, 1);
+  drawAllSpheres(sphere);
   glPopMatrix();
 
   glutSwapBuffers();

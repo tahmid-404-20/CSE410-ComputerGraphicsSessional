@@ -23,6 +23,15 @@ public:
     this->y = v.y;
     this->z = v.z;
   }
+
+  Point3D normalize_point() {
+    double magnitude = sqrt(x * x + y * y + z * z);
+    return Point3D(x / magnitude, y / magnitude, z / magnitude);
+  }
+
+  Point3D operator*(double scalar) {
+    return Point3D(this->x * scalar, this->y * scalar, this->z * scalar);
+  }
 };
 
 class Point2D {
