@@ -119,6 +119,16 @@ void keyboardListener(unsigned char key, int x, int y) {
     { camera.tiltClockwiseOrAntiClockwise(rotation_angle, true); }
     break;
 
+  case 'w':
+    printf("w pressed\n");
+    { camera.moveUpOrDownWithoutChangingReferencePoint(step / 2.0, true); }
+    break;
+
+  case 's':
+    printf("s pressed\n");
+    { camera.moveUpOrDownWithoutChangingReferencePoint(step / 2.0, false); }
+    break;
+
   case 'a':
     printf("a pressed\n");
     { current_object_rotation_angle -= OBJECT_ROTATION_ANGLE; }
@@ -290,8 +300,8 @@ void drawAllSpheres(Sphere &sphere) {
   drawASphere(sphere);
   glPopMatrix();
 
-  for(int i=0;i<4;i++) {
-    if( i % 2 == 0) {
+  for (int i = 0; i < 4; i++) {
+    if (i % 2 == 0) {
       // blue
       glColor3f(0.0f, 0.0f, 1.0f);
     } else {
@@ -299,11 +309,10 @@ void drawAllSpheres(Sphere &sphere) {
       glColor3f(0.0f, 1.0f, 0.0f);
     }
     glPushMatrix();
-    glRotatef(i*90, 0, 0, 1);
+    glRotatef(i * 90, 0, 0, 1);
     glRotatef(90, 1, 0, 0);
     drawASphere(sphere);
     glPopMatrix();
-  
   }
 }
 

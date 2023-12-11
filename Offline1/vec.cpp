@@ -90,22 +90,24 @@ public:
 
     return v1 + v2 + v3;
   }
+
+  double getAngleBetweenVector(Vec v) {
+    Vec a = *this;
+    Vec b = v;
+
+    double dot_product = a.getDotProduct(b);
+    double magnitude_a = a.getMagnitude();
+    double magnitude_b = b.getMagnitude();
+
+    double res = dot_product / (magnitude_a * magnitude_b);
+
+    if(res > 1) {
+      res = 1;
+    } else if(res < -1) {
+      res = -1;
+    }
+
+    return acos(dot_product / (magnitude_a * magnitude_b));
+  }
 };
 
-
-// int main() {
-//   Vec lookAt(0, 0, 0);
-//   Vec up(0, 1, 0);
-//   Vec eye(0, 0, 5);
-
-//   double angle_in_radians = 30 * M_PI / 180;
-
-//   Vec look = (lookAt - eye).getNormalizedResult();
-//   Vec right = (look.getCrossProduct(up)).getNormalizedResult();
-
-//   Vec new_look = look.rotateAroundAxis(right, angle_in_radians);
-//   Vec new_up = up.rotateAroundAxis(right, angle_in_radians);
-
-//   printf("new_look: %lf %lf %lf\n", new_look.x, new_look.y, new_look.z);
-//   printf("new_up: %lf %lf %lf\n", new_up.x, new_up.y, new_up.z);
-// }

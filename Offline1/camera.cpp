@@ -162,30 +162,27 @@ public:
   void moveUpOrDownWithoutChangingReferencePoint(double distance,
                                                  bool upDir = true) {
     Vec look = getLookVector();
-    look = look * (-1);
+    look = look * (-1);  // from lookAt to eye
     Vec up = getUpUnitVector();
-    Vec right = look.getCrossProduct(up);  // the axis of rotation
-
-    Vec xy = Vec(ex, ey, 0);
-    Vec prev = look;
-
-    double prev_angle = acos(prev.getDotProduct(xy) / (prev.getMagnitude() * xy.getMagnitude()));
     
+    Vec look_xy = Vec(look.x, look.y, 0);
+    Vec rotation_axis = Vec(look_xy.y, -look_xy.x, 0);
+
+    Vec new_look;
     if(upDir) {
+      new_look = Vec(ex-lx, ey-ly, ez-lz + distance);
       ez += distance;
     } else {
+      new_look = Vec(ex-lx, ey-ly, ez-lz - distance);
       ez -= distance;
-    }
+    }   
+    double angle = new_look.getAngleBetweenVector(look);
 
-    Vec new_look = getLookVector() * (-1);
-    double new_angle = acos(new_look.getDotProduct(xy) / (new_look.getMagnitude() * xy.getMagnitude()));
 
-    double angle = new_angle - prev_angle;
-
-    if (upDir) {
-      up = up.rotateAroundAxis(right, angle);
+    if(upDir) {
+      up = up.rotateAroundAxis(rotation_axis, angle);
     } else {
-      up = up.rotateAroundAxis(right, -angle);
+      up = up.rotateAroundAxis(rotation_axis, -angle);
     }
 
     setUpVector(up);

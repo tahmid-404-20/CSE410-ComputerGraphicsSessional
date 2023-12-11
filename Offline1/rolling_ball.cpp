@@ -333,15 +333,15 @@ void keyboardListener(unsigned char key, int x, int y) {
     { camera.tiltClockwiseOrAntiClockwise(rotation_angle, true); }
     break;
 
-    // case 'w':
-    //   printf("w pressed\n");
-    //   { camera.moveUpOrDownWithoutChangingReferencePoint(step*2, true); }
-    //   break;
+    case 'w':
+      printf("w pressed\n");
+      { camera.moveUpOrDownWithoutChangingReferencePoint(step*2, true); }
+      break;
 
-    // case 's':
-    //   printf("w pressed\n");
-    //   { camera.moveUpOrDownWithoutChangingReferencePoint(step*2, false); }
-    //   break;
+    case 's':
+      printf("s pressed\n");
+      { camera.moveUpOrDownWithoutChangingReferencePoint(step*2, false); }
+      break;
 
   case 'j': // rotate counter-clockwise
     printf("j pressed\n");
