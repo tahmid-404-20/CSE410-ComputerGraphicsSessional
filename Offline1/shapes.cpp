@@ -1,4 +1,5 @@
 #include "co-ordinate.cpp"
+#include <bits/stdc++.h>
 #include <cmath>
 #include <vector>
 
@@ -48,13 +49,17 @@ class Sphere {
 private:
   void compute_circular_unit_vector();
   void compute_points_on_updated_radius();
-  std::vector<std::vector<Point3D>> circular_unit_vectors; // only updated at constructor
+  std::vector<std::vector<Point3D>>
+      circular_unit_vectors; // only updated at constructor
+
+  void compute_sphere_points();
 
 public:
   int sectors, stacks;
   double radius;
 
-  std::vector<std::vector<Point3D>> points;                 // every time radius is update, this is updated
+  std::vector<std::vector<Point3D>>
+      points; // every time radius is update, this is updated
 
   Sphere(double radius, int sectors, int stacks) {
     this->radius = radius;
@@ -99,9 +104,9 @@ void Sphere::compute_circular_unit_vector() {
 
 void Sphere::compute_points_on_updated_radius() {
   points.clear();
-  for(int i=0; i< this->circular_unit_vectors.size(); i++) {
+  for (int i = 0; i < this->circular_unit_vectors.size(); i++) {
     points.push_back(std::vector<Point3D>());
-    for(int j=0; j< this->circular_unit_vectors[i].size(); j++) {
+    for (int j = 0; j < this->circular_unit_vectors[i].size(); j++) {
       points[i].push_back(circular_unit_vectors[i][j] * this->radius);
     }
   }

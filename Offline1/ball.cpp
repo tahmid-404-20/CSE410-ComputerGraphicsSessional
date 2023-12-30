@@ -2,7 +2,8 @@
 #include "vec.cpp"
 #include <vector>
 
-#define BALL_ROTATION_ANGLE 0.05
+#define BALL_ROTATION_ANGLE 0.1
+#define BALL_SPEED 0.5
 
 enum LastMove { FORWARD, BACKWARD };
 
@@ -42,7 +43,7 @@ public:
     x_coord = 0;
     y_coord = 0;
     radius = 1;
-    speed = 0.5;
+    speed = BALL_SPEED;
     move_angle_x = M_PI / 4;
     ball_rotation_angle = 0.05;
 

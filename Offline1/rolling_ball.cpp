@@ -50,8 +50,6 @@ void ballMoveMentEventDriven(int hashIndex);
 void checkCollisionManual(Ball *ball);
 void predictNextCollision(Ball &ball);
 
-// a openGL integer
-GLint counter = 0;
 Camera camera;
 Ball ball;
 
@@ -162,7 +160,7 @@ void ballMoveMentEventDriven(int hashIndex) {
 
   collisionMap.erase(hashIndex);
   ball.moveForwardOrBackward(true);
-  ball.collision_count++;
+  // ball.collision_count++;
   checkCollisionManual(&ball);
   predictNextCollision(ball);
 }
@@ -171,11 +169,6 @@ void init() {
   printf("Do your initialization here\n");
   glClearColor(0.0f, 0.0f, 0.0f,
                1.0f); // Set background color to black and opaque
-
-  counter = 0;
-  x_coord = 0;
-  y_coord = 0;
-  rotateZ = false;
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
@@ -209,7 +202,6 @@ void checkCollisionManual(Ball *ball) {
 
   double B;
   if (x_change) {
-    double prev_x = x - dx;
     if (x + r > BOUNDARY_RADIUS) {
       B = BOUNDARY_RADIUS - r;
     } else {
@@ -232,6 +224,10 @@ void checkCollisionManual(Ball *ball) {
   }
 
   if (simulationMode) {
+    if (x_change || y_change) {
+      ball->collision_count++;
+    }
+
     predictNextCollision(*ball);
   }
 }
@@ -325,23 +321,13 @@ void keyboardListener(unsigned char key, int x, int y) {
 
   case '5': // tilt anti-clockwise
     printf("5 pressed\n");
-    { camera.tiltClockwiseOrAntiClockwise(rotation_angle, false); }
+    { camera.tiltClockwiseOrAntiClockwise(rotation_angle, true); }
     break;
 
   case '6': // tilt clockwise
     printf("6 pressed\n");
-    { camera.tiltClockwiseOrAntiClockwise(rotation_angle, true); }
+    { camera.tiltClockwiseOrAntiClockwise(rotation_angle, false); }
     break;
-
-    case 'w':
-      printf("w pressed\n");
-      { camera.moveUpOrDownWithoutChangingReferencePoint(step*2, true); }
-      break;
-
-    case 's':
-      printf("s pressed\n");
-      { camera.moveUpOrDownWithoutChangingReferencePoint(step*2, false); }
-      break;
 
   case 'j': // rotate counter-clockwise
     printf("j pressed\n");
@@ -381,6 +367,16 @@ void keyboardListener(unsigned char key, int x, int y) {
     }
     break;
 
+  case 'w':
+    printf("w pressed\n");
+    camera.moveUpOrDownWithoutChangingReferencePoint(step * 2, true);
+    break;
+
+  case 's':
+    printf("s pressed\n");
+    camera.moveUpOrDownWithoutChangingReferencePoint(step * 2, false);
+    break;
+
   case ' ':
     printf("space pressed\n");
     {
@@ -392,7 +388,7 @@ void keyboardListener(unsigned char key, int x, int y) {
     break;
 
   default:
-    printf("We don't know what you pressed\n");
+    printf("We don't know what you pressed!!!\n");
     break;
   }
 }
@@ -671,8 +667,8 @@ void display() {
   gluLookAt(camera.ex, camera.ey, camera.ez, camera.lx, camera.ly, camera.lz,
             camera.ux, camera.uy, camera.uz);
 
-  glColor3f(1.0f, 0.0f, 0.0f); // Green
-  drawAxes();
+  // glColor3f(1.0f, 0.0f, 0.0f); // Green
+  // drawAxes();
 
   drawCheckers(4);
 
@@ -714,7 +710,6 @@ void idle() {
 void ballMovement(int value) {
   if (simulationMode) {
     ball.moveForwardOrBackward(true);
-    // checkCollisionManual(&ball);
   }
 
   glutPostRedisplay();
@@ -734,7 +729,6 @@ int main(int argc, char **argv) {
   glutSpecialFunc(keyboardSpecialListener);
 
   glutTimerFunc(1, ballMovement, 200);
-  // glutTimerFunc(1, checkCollision, 10);
   glutIdleFunc(idle);
   init();
 

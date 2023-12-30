@@ -1,3 +1,4 @@
+// #include "bits/stdc++.h"
 #include "vec.cpp"
 
 class Camera {
@@ -162,24 +163,35 @@ public:
   void moveUpOrDownWithoutChangingReferencePoint(double distance,
                                                  bool upDir = true) {
     Vec look = getLookVector();
-    look = look * (-1);  // from lookAt to eye
+    look = look * (-1); // from lookAt to eye
     Vec up = getUpUnitVector();
-    
+
     Vec look_xy = Vec(look.x, look.y, 0);
     Vec rotation_axis = Vec(look_xy.y, -look_xy.x, 0);
 
+    // printf("rotation_axis mag %lf: ", rotation_axis.getMagnitude());
+
+    if (rotation_axis.getMagnitude() < 0.000001) {
+      if (upDir) {
+        ez += distance;
+      } else {
+        ez -= distance;
+      }
+
+      return;
+    }
+
     Vec new_look;
-    if(upDir) {
-      new_look = Vec(ex-lx, ey-ly, ez-lz + distance);
+    if (upDir) {
+      new_look = Vec(ex - lx, ey - ly, ez - lz + distance);
       ez += distance;
     } else {
-      new_look = Vec(ex-lx, ey-ly, ez-lz - distance);
+      new_look = Vec(ex - lx, ey - ly, ez - lz - distance);
       ez -= distance;
-    }   
+    }
     double angle = new_look.getAngleBetweenVector(look);
 
-
-    if(upDir) {
+    if (upDir) {
       up = up.rotateAroundAxis(rotation_axis, angle);
     } else {
       up = up.rotateAroundAxis(rotation_axis, -angle);

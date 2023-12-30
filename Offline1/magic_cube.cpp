@@ -111,12 +111,12 @@ void keyboardListener(unsigned char key, int x, int y) {
 
   case '5': // tilt anti-clockwise
     printf("5 pressed\n");
-    { camera.tiltClockwiseOrAntiClockwise(rotation_angle, false); }
+    { camera.tiltClockwiseOrAntiClockwise(rotation_angle, true); }
     break;
 
   case '6': // tilt clockwise
     printf("6 pressed\n");
-    { camera.tiltClockwiseOrAntiClockwise(rotation_angle, true); }
+    { camera.tiltClockwiseOrAntiClockwise(rotation_angle, false); }
     break;
 
   case 'w':
@@ -229,6 +229,7 @@ void drawTriangle(double a) {
 }
 
 void drawSphereSegment(Sphere &sphere) {
+  // std::vector<std::vector<Point3D>> points = sphere.points;
   std::vector<std::vector<Point3D>> points = sphere.points;
 
   for (int i = 0; i < points.size() - 1; i++) { // stacks
@@ -422,7 +423,7 @@ int main(int argc, char **argv) {
   glutInitWindowPosition(750,
                          250); // Position the window's initial top-left corner
   glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
-  glutCreateWindow("Test");
+  glutCreateWindow("Magic Cube - 1905002");
   glutDisplayFunc(display);
   glutKeyboardFunc(keyboardListener);
   glutSpecialFunc(keyboardSpecialListener);
