@@ -3,6 +3,7 @@
 #include <stack>
 #include <string>
 
+#include "bitmap_image.hpp"
 #include "triangle.cpp"
 
 #define MAX_Z_BUFFER_VALUE 2
@@ -131,6 +132,19 @@ vector<vector<double>> initialize_2D_double_vector(double value, int row,
   return result;
 }
 
+vector<vector<Color>> initialize_frame_buffer(int row, int col) {
+  vector<vector<Color>> result;
+  for (int i = 0; i < row; i++) {
+    vector<Color> row;
+    for (int j = 0; j < col; j++) {
+      Color color;
+      row.push_back(color);
+    }
+    result.push_back(row);
+  }
+  return result;
+}
+
 int get_min_y_value_index(vector<vector<double>> points) {
   int min_y_index = 0;
   double min_y = points[0][1];
@@ -201,10 +215,10 @@ void z_buffer_algorithm(string input_filename, string output_filename) {
   vector<vector<double>> z_buffer =
       initialize_2D_double_vector(MAX_Z_BUFFER_VALUE, height, width);
 
+  vector<vector<Color>> frame_buffer = initialize_frame_buffer(height, width);
+
   for (int i = 0; i < triangles_after_projection.size(); i++) {
     Triangle triangle = triangles_after_projection[i];
-
-    cout << "index: " << i << endl;
 
     vector<vector<double>> points_list = {triangle.v1, triangle.v2,
                                           triangle.v3};
@@ -214,10 +228,8 @@ void z_buffer_algorithm(string input_filename, string output_filename) {
     double max_y_value =
         max(max(triangle.v1[1], triangle.v2[1]), triangle.v3[1]);
 
-    
-
-    int start_row = round((top_y - max_y_value) / dy);   // top-most point
-    int bottom_row = round((top_y - min_y_value) / dy);  // bottom-most point
+    int start_row = (int)((top_y - max_y_value) / dy);  // top-most point
+    int bottom_row = (int)((top_y - min_y_value) / dy); // bottom-most point
 
     if ((start_row < 0 && bottom_row < 0) ||
         (start_row > (height - 1) &&
@@ -310,18 +322,13 @@ void z_buffer_algorithm(string input_filename, string output_filename) {
         x_b = x1 + (y_s - y1) * (x2 - x1) / (y2 - y1);
         z_b = z1 + (y_s - y1) * (z2 - z1) / (y2 - y1);
       }
-    
-        // if(i ==0) {
-        //     cout << "x_a: " << x_a << " z_a: " << z_a << "----------";
-        //     cout << "x_b: " << x_b << " z_b: " << z_b << endl;
-        // }
 
-        // in top-most point, sometime may occur
-        if(x_b < x_a) {
-            double temp = x_a;
-            x_a = x_b;
-            x_b = temp;
-        }
+      // in top-most point, sometime may occur
+    //   if (x_b < x_a) {
+    //     double temp = x_a;
+    //     x_a = x_b;
+    //     x_b = temp;
+    //   }
 
       int start_col_index = round((x_a - left_x) / dx);
       int end_col_index = round((x_b - left_x) / dx);
@@ -348,6 +355,7 @@ void z_buffer_algorithm(string input_filename, string output_filename) {
         if ((z_p < z_buffer[row_no][col_no]) && (z_p >= front_limit_z) &&
             (z_p <= back_limit_z)) {
           z_buffer[row_no][col_no] = z_p;
+          frame_buffer[row_no][col_no] = triangle.color;
         }
       }
     }
@@ -359,10 +367,22 @@ void z_buffer_algorithm(string input_filename, string output_filename) {
   for (int i = 0; i < z_buffer.size(); i++) {
     for (int j = 0; j < z_buffer[i].size(); j++) {
       if (z_buffer[i][j] != MAX_Z_BUFFER_VALUE)
-        z_file << setprecision(7) << z_buffer[i][j] << "\t";
+        z_file << setprecision(6) << z_buffer[i][j] << "\t";
     }
     z_file << "\n";
   }
+  z_file.close();
+
+  bitmap_image image(width, height);
+  image.set_all_channels(0, 0, 0);
+  for (int i = 0; i < frame_buffer.size(); i++) {
+    for (int j = 0; j < frame_buffer[i].size(); j++) {
+      image.set_pixel(j, i, frame_buffer[i][j].r, frame_buffer[i][j].g,
+                      frame_buffer[i][j].b);
+    }
+  }
+
+  image.save_image("out.bmp");
 }
 
 int main() {
