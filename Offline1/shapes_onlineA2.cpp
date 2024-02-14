@@ -459,14 +459,6 @@ void drawOctahedron(double a) {
   }
 }
 
-void Timer(int value){
-    // printf("We are in Timer function. couter : %d\n", ++counter);
-    
-
-    glutPostRedisplay();
-    glutTimerFunc(10, Timer, 0);
-}
-
 void display() {
 
   glEnable(GL_DEPTH_TEST);

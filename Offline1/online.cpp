@@ -22,10 +22,15 @@
 double step = 0.5;
 double rotation_angle = 0.05;
 
+Vec rotationAxis(-1.0, 0.0, 0.0);
+double ball_angle = 0.0;
+
 Camera camera(2, 2, 2, 0, 0, 0, 0, 0, 1);
 
 double triangle_length = 1;
 double sphere_radius = 0;
+
+double currentRotatedAngle = 0.0;
 
 double current_object_rotation_angle = 0;
 
@@ -45,6 +50,7 @@ void init() {
 }
 
 void idle() {
+  currentRotatedAngle += 1.0;
   glutPostRedisplay(); // Post a re-paint request to activate display(),
                        // variable set koire then call koro display
 }
@@ -206,6 +212,10 @@ void keyboardListener(unsigned char key, int x, int y) {
       }
     }
     break;
+
+  case 'x':
+    ball_angle += 0.05;
+
   default:
     printf("We don't know what you pressedBRO\n");
     break;
@@ -295,9 +305,9 @@ void drawCylinderSegment(Cylinder &cylinder) {
   std::vector<Point2D> points = cylinder.points;
   double height = cylinder.height;
 
-  for (int i = 0; i < points.size()-1; i++) {
+  for (int i = 0; i < points.size() - 1; i++) {
     Point2D p1 = points[i];
-    Point2D p2 = points[i+1];
+    Point2D p2 = points[i + 1];
 
     glBegin(GL_QUADS);
     {
@@ -314,9 +324,9 @@ void drawHalfCylinderSegment(HalfCylinder &cylinder) {
   std::vector<Point2D> points = cylinder.points;
   double height = cylinder.height;
 
-  for (int i = 0; i < points.size()-1; i++) {
+  for (int i = 0; i < points.size() - 1; i++) {
     Point2D p1 = points[i];
-    Point2D p2 = points[i+1];
+    Point2D p2 = points[i + 1];
 
     glBegin(GL_QUADS);
     {
@@ -459,13 +469,117 @@ void drawOctahedron(double a) {
   }
 }
 
-void Timer(int value){
-    // printf("We are in Timer function. couter : %d\n", ++counter);
-    
 
-    glutPostRedisplay();
-    glutTimerFunc(10, Timer, 0);
+void drawMovingLine() {
+  double rad = 1.0;
+
+  double x = rad * cos(currentRotatedAngle * M_PI / 180.0);
+  double y = rad * sin(currentRotatedAngle * M_PI / 180.0);
+
+  glBegin(GL_LINES);
+  {
+    glColor3f(1.0, 1.0, 1.0);
+    // glRotatef(currentRotatedAngle, 0.0, 0.0, 1.0);
+    glVertex3f(0.0, 0.0, 0.0);
+    glVertex3f(x, y, 0.0);
+  }
+  glEnd();
 }
+
+void drawCircle() {
+
+  double rad = 1.0;
+  for (int theta = 0; theta < 360; theta++) {
+
+    double theta1Rad = theta * M_PI / 180.0;
+    double theta2Rad = (theta + 1) * M_PI / 180.0;
+
+    double x1 = rad * cos(theta1Rad);
+    double y1 = rad * sin(theta1Rad);
+
+    double x2 = rad * cos(theta2Rad);
+    double y2 = rad * sin(theta2Rad);
+    glBegin(GL_LINES);
+    {
+      glColor3f(0.0, 0.0, 1.0);
+      glVertex3f(x1, y1, 0.0);
+      glVertex3f(x2, y2, 0.0);
+    }
+    glEnd();
+  }
+}
+
+void drawSmallCircle() {
+
+  double bigRad = 1.0;
+
+  double x = bigRad * cos(currentRotatedAngle * M_PI / 180.0);
+  double y = bigRad * sin(currentRotatedAngle * M_PI / 180.0);
+
+  
+  double rad = 0.05;
+  for (int theta = 0; theta < 360; theta++) {
+
+    double theta1Rad = theta * M_PI / 180.0;
+    double theta2Rad = (theta + 1) * M_PI / 180.0;
+
+    double x1 = rad * cos(theta1Rad);
+    double y1 = rad * sin(theta1Rad);
+
+    double x2 = rad * cos(theta2Rad);
+    double y2 = rad * sin(theta2Rad);
+    glBegin(GL_LINES);
+    {
+      glColor3f(1.0,0.0,0.0);
+      glVertex3f(x1 + x, y1 + y, 0.0);
+      glVertex3f(x2 + x, y2 + y, 0.0);
+    }
+    glEnd();
+  }
+}
+
+void drawWaveShapes() {
+    double rad = 1.0;
+    double y = rad * sin(currentRotatedAngle * M_PI / 180.0);
+
+    double angleToDraw = currentRotatedAngle;
+
+    int nPoints = 180;
+    double xStart = 1.2;
+    for(int i=0; i<nPoints; i++) {
+        
+        double x = xStart + i * 0.01;
+        double y = rad * sin(angleToDraw * M_PI / 180.0);
+
+        glBegin(GL_LINES);
+        {
+            glColor3f(1.0, 1.0, 1.0);
+            glVertex3f(x, y, 0.0);
+            glVertex3f(x + 0.015, y, 0.0);
+        } 
+        glEnd();
+
+        angleToDraw -= 10;
+    }
+}
+
+void drawHorizontalLine() {
+    double rad = 1.0;
+
+  double x = rad * cos(currentRotatedAngle * M_PI / 180.0);
+  double y = rad * sin(currentRotatedAngle * M_PI / 180.0);
+
+  glBegin(GL_LINES);
+  {
+    glColor3f(1.0, 1.0, 1.0);
+    // glRotatef(currentRotatedAngle, 0.0, 0.0, 1.0);
+    glVertex3f(x, y, 0.0);
+    glVertex3f(1.2, y, 0.0);
+  }
+  glEnd();
+}
+
+// void dotPoints
 
 void display() {
 
@@ -475,32 +589,34 @@ void display() {
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  gluLookAt(camera.ex, camera.ey, camera.ez, camera.lx, camera.ly, camera.lz,
-            camera.ux, camera.uy, camera.uz);
+  gluLookAt(0, 0, 5, 0, 0, 0, 0, 1, 0);
+
+  double radius = 10.0;
 
   // glColor3f(0.0f, 0.0f, 1.0f); // Green
   // drawAxes();
+  glColor3f(0.0f, 0.0f, 1.0f);
+  drawCircle();
 
-  // set color to cyan
-  glColor3f(0.0f, 1.0f, 1.0f);
-  glPushMatrix();
-  glRotatef(current_object_rotation_angle * 180 / M_PI, 0, 0, 1);
-  drawOctahedron(triangle_length);
-  glPopMatrix();
 
-  // // set color to yellow
-  glColor3f(1.0f, 1.0f, 0.0f);
-  glPushMatrix();
-  glRotatef(current_object_rotation_angle * 180 / M_PI, 0, 0, 1);
-  drawAllCylinders(cylinder);
-  glPopMatrix();
 
-  glPushMatrix();
-  glRotatef(current_object_rotation_angle * 180 / M_PI, 0, 0, 1);
-  drawAllSpheres(sphere);
-  glPopMatrix();
+  drawMovingLine();
+
+  drawSmallCircle();
+
+  drawHorizontalLine();
+
+  drawWaveShapes();
 
   glutSwapBuffers();
+}
+
+void Timer(int value) {
+  // printf("We are in Timer function. couter : %d\n", ++counter);
+
+  currentRotatedAngle += 1.0;
+  glutPostRedisplay();
+  glutTimerFunc(10, Timer, 0);
 }
 
 int main(int argc, char **argv) {
@@ -514,8 +630,10 @@ int main(int argc, char **argv) {
   glutKeyboardFunc(keyboardListener);
   glutSpecialFunc(keyboardSpecialListener);
 
+  glutTimerFunc(10, Timer, 0);
+
   // glutTimerFunc(1, checkCollision, 10);
-  glutIdleFunc(idle);
+//   glutIdleFunc(idle);
   init();
 
   glutMainLoop();

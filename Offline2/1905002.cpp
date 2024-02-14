@@ -323,12 +323,14 @@ void z_buffer_algorithm(string input_filename, string output_filename) {
         z_b = z1 + (y_s - y1) * (z2 - z1) / (y2 - y1);
       }
 
-      // in top-most point, sometime may occur
-    //   if (x_b < x_a) {
-    //     double temp = x_a;
-    //     x_a = x_b;
-    //     x_b = temp;
-    //   }
+      // // in top-most point, sometime may occur
+      // if (x_b < x_a) {
+      //   std::swap(x_a,x_b);
+      //   std::swap(z_a,z_b);
+      // }
+
+      // int start_col_index = (int)((x_a - left_x) / dx);
+      // int end_col_index = (int)((x_b - left_x) / dx);
 
       int start_col_index = round((x_a - left_x) / dx);
       int end_col_index = round((x_b - left_x) / dx);

@@ -717,6 +717,14 @@ void ballMovement(int value) {
                 SIMULATION_CALL_INTERVAL);
 }
 
+void Timer(int value){
+    // printf("We are in Timer function. couter : %d\n", ++counter);
+    
+
+    glutPostRedisplay();
+    glutTimerFunc(10, Timer, 0);
+}
+
 int main(int argc, char **argv) {
   glutInit(&argc, argv);
   glutInitWindowSize(600, 600); // Set the window's initial width & height

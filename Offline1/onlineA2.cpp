@@ -22,6 +22,9 @@
 double step = 0.5;
 double rotation_angle = 0.05;
 
+Vec rotationAxis(-1.0, 0.0,0.0);
+double ball_angle = 0.0;
+
 Camera camera(2, 2, 2, 0, 0, 0, 0, 0, 1);
 
 double triangle_length = 1;
@@ -206,6 +209,11 @@ void keyboardListener(unsigned char key, int x, int y) {
       }
     }
     break;
+
+  case 'x':
+    ball_angle += 0.05;
+    
+
   default:
     printf("We don't know what you pressedBRO\n");
     break;
@@ -295,9 +303,9 @@ void drawCylinderSegment(Cylinder &cylinder) {
   std::vector<Point2D> points = cylinder.points;
   double height = cylinder.height;
 
-  for (int i = 0; i < points.size()-1; i++) {
+  for (int i = 0; i < points.size() - 1; i++) {
     Point2D p1 = points[i];
-    Point2D p2 = points[i+1];
+    Point2D p2 = points[i + 1];
 
     glBegin(GL_QUADS);
     {
@@ -314,9 +322,9 @@ void drawHalfCylinderSegment(HalfCylinder &cylinder) {
   std::vector<Point2D> points = cylinder.points;
   double height = cylinder.height;
 
-  for (int i = 0; i < points.size()-1; i++) {
+  for (int i = 0; i < points.size() - 1; i++) {
     Point2D p1 = points[i];
-    Point2D p2 = points[i+1];
+    Point2D p2 = points[i + 1];
 
     glBegin(GL_QUADS);
     {
@@ -422,6 +430,57 @@ void drawAllCylinders(Cylinder &cylinder) {
   }
 }
 
+void drawMakorsha() {
+  // color is white
+  glColor3f(1.0, 1.0, 1.0);
+
+  double length = 50;
+  int n = 20;
+  double degree = 360.0 / n;
+  for (int i = 0; i < n; i++) {
+    glPushMatrix();
+    glRotatef(i * degree, 0, 0, 1);
+    glBegin(GL_LINES);
+    {
+      glVertex3f(0.0, 0.0, 0.0);
+      glVertex3f(length, 0.0, 0.0);
+    }
+    glEnd();
+    glPopMatrix();
+  }
+
+  // draw crcular part
+
+  int numberOfCircles = 10;
+  double stepSize = length / numberOfCircles;
+
+  std::cout << "stepsize: " << stepSize << std::endl;
+
+  for (int i = 0; i < numberOfCircles; i++) {
+    double rad = (i + 1) * stepSize;
+
+    std::cout << "rad: " << rad << std::endl;
+    for (int theta = 0; theta < 360; theta++) {
+
+      double theta1Rad = theta * M_PI / 180.0;
+      double theta2Rad = (theta + 1) * M_PI / 180.0;
+
+      double x1 = rad * cos(theta1Rad);
+      double y1 = rad * sin(theta1Rad);
+
+      double x2 = rad * cos(theta2Rad);
+      double y2 = rad * sin(theta2Rad);
+      glBegin(GL_LINES);
+      {
+        glColor3f(1.0, 1.0, 1.0);
+        glVertex3f(x1, y1, 0.0);
+        glVertex3f(x2, y2, 0.0);
+      }
+      glEnd();
+    }
+  }
+}
+
 // a should be less than MAX_LENGTH_TRIANGLE
 void drawOctahedron(double a) {
 
@@ -459,14 +518,6 @@ void drawOctahedron(double a) {
   }
 }
 
-void Timer(int value){
-    // printf("We are in Timer function. couter : %d\n", ++counter);
-    
-
-    glutPostRedisplay();
-    glutTimerFunc(10, Timer, 0);
-}
-
 void display() {
 
   glEnable(GL_DEPTH_TEST);
@@ -478,10 +529,16 @@ void display() {
   gluLookAt(camera.ex, camera.ey, camera.ez, camera.lx, camera.ly, camera.lz,
             camera.ux, camera.uy, camera.uz);
 
+  double radius = 10.0;
+
   // glColor3f(0.0f, 0.0f, 1.0f); // Green
   // drawAxes();
 
+  drawMakorsha();
+  
+  glPushMatrix();
   // set color to cyan
+  glTranslatef(radius, 0.0, MAX_LENGTH_TRIANGLE/sqrt(3));
   glColor3f(0.0f, 1.0f, 1.0f);
   glPushMatrix();
   glRotatef(current_object_rotation_angle * 180 / M_PI, 0, 0, 1);
@@ -499,6 +556,8 @@ void display() {
   glRotatef(current_object_rotation_angle * 180 / M_PI, 0, 0, 1);
   drawAllSpheres(sphere);
   glPopMatrix();
+  glPopMatrix();
+
 
   glutSwapBuffers();
 }
