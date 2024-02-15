@@ -64,6 +64,16 @@ public:
     return result;
   }
 
+  // overload unary -
+  Vec operator-() {
+    Vec result;
+    result.x = -x;
+    result.y = -y;
+    result.z = -z;
+
+    return result;
+  }
+
   // methods
   double getMagnitude() { return sqrt(x * x + y * y + z * z); }
 

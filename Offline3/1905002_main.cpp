@@ -19,8 +19,10 @@ double step = 0.5;
 double nearPlane = 1, farPlane = 1000, fovY = 60, aspectRatio = 1;
 
 // in pixels
-int imageWidth = 600;
-int imageHeight = 600;
+int imageWidth = 2000;
+int imageHeight = 2000;
+
+int recursionLevel = 3;
 
 Camera camera;
 
@@ -259,21 +261,44 @@ void clearObjects() {
 
 void testSetObjects() {
   Sphere *sphere = new Sphere(Vec(0, 0, 10), 10);
-  sphere->setColor(1, 0, 0);
-  sphere->setCoEfficients(0.2, 0.6, 0.8, 0.2);
-  sphere->setShine(10);
+  sphere->setColor(0, 0, 1);
+  sphere->setCoEfficients(0.2, 0.6, 0.3, 0.4);
+  sphere->setShine(6);
   objects.push_back(sphere);
 
+  sphere = new Sphere(Vec(-20, 10, 10), 10);
+  sphere->setColor(0, 1, 0);
+  sphere->setCoEfficients(0.2, 0.6, 0.6, 0.5);
+  sphere->setShine(6);
+  objects.push_back(sphere);
+
+  sphere = new Sphere(Vec(20, -10, 10), 8);
+  sphere->setColor(1, 1, 0);
+  sphere->setCoEfficients(0.2, 0.6, 0.6, 0.5);
+  sphere->setShine(6);
+  objects.push_back(sphere);
+
+  sphere = new Sphere(Vec(10, -20, 30), 8);
+  sphere->setColor(0, 1, 1);
+  sphere->setCoEfficients(0.2, 0.6, 0.6, 0.5);
+  sphere->setShine(6);
+  objects.push_back(sphere);
+
+
   Floor *floor = new Floor(1000, 20);
+  floor->setCoEfficients(0.4, 0.4, 0.3, 0.1);
+  floor->setShine(1);
   objects.push_back(floor);
 
-  PointLight pointLight(Vec(20, -20, 30), Color(0, 1, 0));
+  PointLight pointLight(Vec(0, 0, 60), Color(1, 0, 0));
   pointLights.push_back(pointLight);
+
+  PointLight pointLight2(Vec(-30, -40, 20), Color(0.5, 1, 0.5));
+  pointLights.push_back(pointLight2);
 
   // SpotLight spotLight(Vec(20, 20, 15), Color(1, 0, 1), Vec(-1, -1, -1), 30);
   // spotLights.push_back(spotLight);
 
-  capture();
 
 }
 

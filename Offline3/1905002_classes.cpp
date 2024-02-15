@@ -14,6 +14,9 @@
 #define SPEC 2
 #define REFL 3
 
+#define EPSILON 1e-5
+
+extern int recursionLevel;
 // contains color, from 0 to 1
 class Color {
 public:
@@ -140,8 +143,12 @@ public:
     shine = 0;
   }
 
+  double intersect(Ray *ray, Color *color, int level);
+
   virtual void draw() = 0;
-  virtual double intersect(Ray *ray, Color *color, int level) = 0;
+  virtual double getTmin(Ray *ray) = 0;
+  virtual Color getColorAt(Vec intersectionPoint) = 0;
+  virtual Vec getNormalAtIntersectionPoint(Vec intersectionPoint) = 0;
 
   void setColor(double r, double g, double b) { color = Color(r, g, b); }
   void setShine(int shine) { this->shine = shine; }
@@ -157,43 +164,47 @@ extern std::vector<Object *> objects;
 extern std::vector<PointLight> pointLights;
 extern std::vector<SpotLight> spotLights;
 
-class Sphere : public Object {
-  int sectorsCount, stacksCount;
+double Object::intersect(Ray *ray, Color *color, int level) {
+  double t = this->getTmin(ray);
 
-public:
-  Sphere(Vec center, double radius) {
-    this->reference_point = center;
-    this->height = radius;
-    this->width = radius;
-    this->length = radius;
-    this->sectorsCount = 50;
-    this->stacksCount = 100;
+  if (level == 0) {
+    return t;
   }
 
-  void draw() {
-    // openGL code to draw sphere
-    glPushMatrix();
-    glTranslated(reference_point.x, reference_point.y, reference_point.z);
-    glColor3f(color.r, color.g, color.b);
-    glutSolidSphere(height, sectorsCount, stacksCount);
-    glPopMatrix();
+  if (level > recursionLevel) {
+    // std::cout << "level: " << level << std::endl;
+    return t;
   }
 
-  double intersect(Ray *ray, Color *color, int level) {
+  Vec intersectionPoint = ray->start + ray->dir * t;
+  Color intersectionPointColor = this->getColorAt(intersectionPoint);
 
-    double t = this->getTmin(ray);
+  *color = intersectionPointColor * coEfficients[AMB];
 
-    if (level == 0) {
-      return t;
+  // iterate through all the point lights
+  for (auto pointLight : pointLights) {
+
+    bool obscured = false;
+
+    Vec dir = intersectionPoint - pointLight.position;
+    Ray shadowRay(pointLight.position, dir);
+
+    double distance = dir.getMagnitude();
+
+    if (distance < EPSILON) {
+      continue;
     }
 
-    Vec intersectionPoint = ray->start + ray->dir * t;
-    Color intersectionPointColor = getColorAt(intersectionPoint);
+    double tMin = distance;
+    for (auto object : objects) {
+      double temp = object->getTmin(&shadowRay);
+      if (temp > 0 && temp + EPSILON < tMin) {
+        obscured = true;
+        break;
+      }
+    }
 
-    *color = intersectionPointColor * coEfficients[AMB];
-
-    // iterate through all the point lights
-    for (auto pointLight : pointLights) {
+    if (!obscured) {
       Vec L = pointLight.position - intersectionPoint;
       Vec N = this->getNormalAtIntersectionPoint(intersectionPoint);
       Vec V = ray->start - intersectionPoint;
@@ -207,31 +218,66 @@ public:
 
       double RV = R.getDotProduct(V);
 
-      // I have doubts about this part, so commenting it out and adding a new
-      //   if (NL > 0) {
-      //     *color = *color + (pointLight.color * coEfficients[DIFF] * NL *
-      //                        intersectionPointColor); // diffuse component
-      //   }
+      NL = std::max(0.0, NL);
+      RV = std::max(0.0, RV);
 
-      //   if (RV > 0) {
-      //     *color =
-      //         *color + (pointLight.color * coEfficients[SPEC] * pow(RV,
-      //         shine) *
-      //                   intersectionPointColor); // specular component
-      //   }
+      *color = *color + (intersectionPointColor * coEfficients[DIFF] * NL *
+                         pointLight.color); // diffuse component
 
-      if (NL > 0) {
-        *color = *color + (intersectionPointColor * coEfficients[DIFF] *
-                           NL); // diffuse component
-      }
-
-      if (RV > 0) {
-        *color = *color + (pointLight.color * coEfficients[SPEC] *
-                           pow(RV, shine)); // specular component
-      }
+      *color =
+          *color + (pointLight.color * coEfficients[SPEC] * pow(RV, shine) *
+                    intersectionPointColor); // specular component
     }
+  }
 
-    return t;
+  Vec normal = this->getNormalAtIntersectionPoint(intersectionPoint).getNormalizedResult();
+  Vec m = normal * ray->dir.getDotProduct(normal);
+  Vec r = ray->dir - m * 2;
+
+  Ray reflectedRay(intersectionPoint + r*EPSILON, r);
+
+  double tMin = 1e9;
+  int nearestObjectIndex = -1;
+
+  for (int k = 0; k < objects.size(); k++) {
+    Color dummyColor;
+    double t = objects[k]->getTmin(&reflectedRay);
+    if (t > 0 && t < tMin) {
+      tMin = t;
+      nearestObjectIndex = k;
+    }
+  }
+
+  if (nearestObjectIndex != -1) {
+    Color reflectedColor;
+    tMin = objects[nearestObjectIndex]->intersect(&reflectedRay, &reflectedColor, level + 1);
+    *color = *color + (reflectedColor * coEfficients[REFL]);
+  }
+  
+  return t;
+}
+
+class Sphere : public Object {
+  int sectorsCount, stacksCount;
+
+public:
+  Sphere(Vec center, double radius) {
+    this->reference_point = center;
+    this->height = radius;
+    this->width = radius;
+    this->length = radius;
+    this->sectorsCount = 50;
+    this->stacksCount = 100;
+    std::cout << "In sphere: recursion level: " << recursionLevel << std::endl;
+  }
+
+  void draw() {
+    // openGL code to draw sphere
+    glPushMatrix();
+    glTranslated(reference_point.x, reference_point.y, reference_point.z);
+    glColor3f(color.r, color.g, color.b);
+    glutSolidSphere(height, sectorsCount, stacksCount);
+    glPopMatrix();
   }
 
   double getTmin(Ray *ray) {
@@ -286,14 +332,16 @@ public:
     this->floorWidth = floorWidth;
     this->tileWidth = tileWidth;
     this->tesselation = floorWidth / tileWidth;
+    this->reference_point = Vec(0, 0, 0);
   }
 
   void draw() {
     // openGL code to draw floor
     glPushMatrix();
+    glTranslated(-floorWidth / 2, -floorWidth / 2, 0);
     glBegin(GL_QUADS);
-    for (int i = -tesselation; i < tesselation; i++) {
-      for (int j = -tesselation; j < tesselation; j++) {
+    for (int i = 0; i < tesselation; i++) {
+      for (int j = 0; j < tesselation; j++) {
         if ((i + j) % 2 == 0) {
           glColor3f(1.0f, 1.0f, 1.0f); // White
         } else {
@@ -309,30 +357,60 @@ public:
     glPopMatrix();
   }
 
-  double intersect(Ray *ray, Color *color, int level) { return 0; }
+  double getTmin(Ray *ray) {
+    // basically ray-plane intersection
+    Vec normal = Vec(0, 0, 1);
+
+    if (ray->dir.getDotProduct(normal) == 0) {
+      return -1;
+    }
+
+    double t = (reference_point - ray->start).getDotProduct(normal) /
+               (ray->dir.getDotProduct(normal));
+
+    return t;
+  }
+  Color getColorAt(Vec intersectionPoint) {
+    // floor spans from -floorWidth/2 to floorWidth/2, alternate tiles are black
+    int i = (int)((intersectionPoint.x + floorWidth / 2) / tileWidth);
+    int j = (int)((intersectionPoint.y + floorWidth / 2) / tileWidth);
+
+    // if outside the floor, return black
+    if (i < 0 || j < 0 || i >= tesselation || j >= tesselation) {
+      return Color(0, 0, 0);
+    }
+
+    if ((i + j) % 2 == 0) {
+      return Color(1, 1, 1);
+    } else {
+      return Color(0, 0, 0);
+    }
+  }
+  Vec getNormalAtIntersectionPoint(Vec intersectionPoint) {
+    return Vec(0, 0, 1);
+  }
 };
 
-class Triangle : public Object {
-  Vec a, b, c;
+// class Triangle : public Object {
+//   Vec a, b, c;
 
-public:
-  Triangle(Vec a, Vec b, Vec c) {
-    this->a = a;
-    this->b = b;
-    this->c = c;
-  }
+// public:
+//   Triangle(Vec a, Vec b, Vec c) {
+//     this->a = a;
+//     this->b = b;
+//     this->c = c;
+//   }
 
-  void draw() {
-    // openGL code to draw triangle
-    glPushMatrix();
-    glBegin(GL_TRIANGLES);
-    glColor3f(color.r, color.g, color.b);
-    glVertex3f(a.x, a.y, a.z);
-    glVertex3f(b.x, b.y, b.z);
-    glVertex3f(c.x, c.y, c.z);
-    glEnd();
-    glPopMatrix();
-  }
+//   void draw() {
+//     // openGL code to draw triangle
+//     glPushMatrix();
+//     glBegin(GL_TRIANGLES);
+//     glColor3f(color.r, color.g, color.b);
+//     glVertex3f(a.x, a.y, a.z);
+//     glVertex3f(b.x, b.y, b.z);
+//     glVertex3f(c.x, c.y, c.z);
+//     glEnd();
+//     glPopMatrix();
+//   }
 
-  double intersect(Ray *ray, Color *color, int level) { return 0; }
-};
+// };
