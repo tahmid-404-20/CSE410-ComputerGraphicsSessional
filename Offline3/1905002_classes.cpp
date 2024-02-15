@@ -256,7 +256,8 @@ double Object::intersect(Ray *ray, Color *color, int level) {
       Vec L = spotLight.pointLight.position - intersectionPoint;
 
       Vec lightRay = -L;
-      double angle = lightRay.getAngleBetweenVector(spotLight.direction);
+      double angle =
+          lightRay.getAngleBetweenVector(spotLight.direction) * 180 / M_PI;
 
       if (angle > spotLight.cutOffAngle)
         continue;
@@ -276,11 +277,14 @@ double Object::intersect(Ray *ray, Color *color, int level) {
       NL = std::max(0.0, NL);
       RV = std::max(0.0, RV);
 
-      *color = *color + (intersectionPointColor * coEfficients[DIFF] * NL *
-                         spotLight.pointLight.color); // diffuse component
+      *color =
+          *color + (intersectionPointColor * coEfficients[DIFF] * NL *
+                    spotLight.pointLight.color *
+                    pow(cos(angle * M_PI / 180.0), 2.4)); // diffuse component
 
       *color = *color + (spotLight.pointLight.color * coEfficients[SPEC] *
-                         pow(RV, shine) * intersectionPointColor); // specular
+                         pow(RV, shine) * intersectionPointColor *
+                         pow(cos(angle * M_PI / 180.0), 2.4)); // specular
     }
   }
 
