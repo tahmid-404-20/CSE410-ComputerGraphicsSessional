@@ -296,8 +296,9 @@ void testSetObjects() {
   PointLight pointLight2(Vec(-30, -40, 20), Color(0.5, 1, 0.5));
   pointLights.push_back(pointLight2);
 
-  // SpotLight spotLight(Vec(20, 20, 15), Color(1, 0, 1), Vec(-1, -1, -1), 30);
-  // spotLights.push_back(spotLight);
+  // (207,89,6)
+  SpotLight spotLight(Vec(20, 20, 20), Color(207.0/255.0, 89/255.0, 6/255.0), Vec(-1, -1, -3), 45);
+  spotLights.push_back(spotLight);
 
 
 }

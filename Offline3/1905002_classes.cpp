@@ -105,7 +105,7 @@ public:
 
   SpotLight(Vec position, Color color, Vec direction, double cutOffAngle) {
     pointLight = PointLight(position, color);
-    this->direction = direction;
+    this->direction = direction.getNormalizedResult();
     this->cutOffAngle = cutOffAngle;
   }
 
@@ -230,11 +230,66 @@ double Object::intersect(Ray *ray, Color *color, int level) {
     }
   }
 
-  Vec normal = this->getNormalAtIntersectionPoint(intersectionPoint).getNormalizedResult();
+  // iterate through all the spot lights
+  for (auto spotLight : spotLights) {
+    bool obscured = false;
+
+    Vec dir = intersectionPoint - spotLight.pointLight.position;
+    Ray shadowRay(spotLight.pointLight.position, dir);
+
+    double distance = dir.getMagnitude();
+
+    if (distance < EPSILON) {
+      continue;
+    }
+
+    double tMin = distance;
+    for (auto object : objects) {
+      double temp = object->getTmin(&shadowRay);
+      if (temp > 0 && temp + EPSILON < tMin) {
+        obscured = true;
+        break;
+      }
+    }
+
+    if (!obscured) {
+      Vec L = spotLight.pointLight.position - intersectionPoint;
+
+      Vec lightRay = -L;
+      double angle = lightRay.getAngleBetweenVector(spotLight.direction);
+
+      if (angle > spotLight.cutOffAngle)
+        continue;
+
+      Vec N = this->getNormalAtIntersectionPoint(intersectionPoint);
+      Vec V = ray->start - intersectionPoint;
+
+      L = L.getNormalizedResult();
+      V = V.getNormalizedResult();
+
+      double NL = N.getDotProduct(L);
+      Vec R = N * (2 * NL) - L;
+      R = R.getNormalizedResult();
+
+      double RV = R.getDotProduct(V);
+
+      NL = std::max(0.0, NL);
+      RV = std::max(0.0, RV);
+
+      *color = *color + (intersectionPointColor * coEfficients[DIFF] * NL *
+                         spotLight.pointLight.color); // diffuse component
+
+      *color = *color + (spotLight.pointLight.color * coEfficients[SPEC] *
+                         pow(RV, shine) * intersectionPointColor); // specular
+    }
+  }
+
+  Vec normal = this->getNormalAtIntersectionPoint(intersectionPoint)
+                   .getNormalizedResult();
   Vec m = normal * ray->dir.getDotProduct(normal);
   Vec r = ray->dir - m * 2;
 
-  Ray reflectedRay(intersectionPoint + r*EPSILON, r);
+  Ray reflectedRay(intersectionPoint + r * EPSILON, r);
 
   double tMin = 1e9;
   int nearestObjectIndex = -1;
@@ -250,10 +305,11 @@ double Object::intersect(Ray *ray, Color *color, int level) {
 
   if (nearestObjectIndex != -1) {
     Color reflectedColor;
-    tMin = objects[nearestObjectIndex]->intersect(&reflectedRay, &reflectedColor, level + 1);
+    tMin = objects[nearestObjectIndex]->intersect(&reflectedRay,
+                                                  &reflectedColor, level + 1);
     *color = *color + (reflectedColor * coEfficients[REFL]);
   }
-  
+
   return t;
 }
 
