@@ -42,6 +42,26 @@ public:
 
     return result;
   }
+
+  // overload * with Color
+  Color operator*(Color c) {
+    Color result;
+    result.r = r * c.r;
+    result.g = g * c.g;
+    result.b = b * c.b;
+
+    return result;
+  }
+
+  // overload + with Color
+  Color operator+(Color c) {
+    Color result;
+    result.r = r + c.r;
+    result.g = g + c.g;
+    result.b = b + c.b;
+
+    return result;
+  }
 };
 
 class PointLight {
@@ -63,7 +83,7 @@ public:
     glPushMatrix();
     glTranslated(position.x, position.y, position.z);
     glColor3f(color.r, color.g, color.b);
-    glutSolidSphere(0.1, 10, 10);
+    glutSolidSphere(2, 10, 10);
     glPopMatrix();
   }
 };
@@ -171,6 +191,45 @@ public:
     Color intersectionPointColor = getColorAt(intersectionPoint);
 
     *color = intersectionPointColor * coEfficients[AMB];
+
+    // iterate through all the point lights
+    for (auto pointLight : pointLights) {
+      Vec L = pointLight.position - intersectionPoint;
+      Vec N = this->getNormalAtIntersectionPoint(intersectionPoint);
+      Vec V = ray->start - intersectionPoint;
+
+      L = L.getNormalizedResult();
+      V = V.getNormalizedResult();
+
+      double NL = N.getDotProduct(L);
+      Vec R = N * (2 * NL) - L;
+      R = R.getNormalizedResult();
+
+      double RV = R.getDotProduct(V);
+
+      // I have doubts about this part, so commenting it out and adding a new
+      //   if (NL > 0) {
+      //     *color = *color + (pointLight.color * coEfficients[DIFF] * NL *
+      //                        intersectionPointColor); // diffuse component
+      //   }
+
+      //   if (RV > 0) {
+      //     *color =
+      //         *color + (pointLight.color * coEfficients[SPEC] * pow(RV,
+      //         shine) *
+      //                   intersectionPointColor); // specular component
+      //   }
+
+      if (NL > 0) {
+        *color = *color + (intersectionPointColor * coEfficients[DIFF] *
+                           NL); // diffuse component
+      }
+
+      if (RV > 0) {
+        *color = *color + (pointLight.color * coEfficients[SPEC] *
+                           pow(RV, shine)); // specular component
+      }
+    }
 
     return t;
   }

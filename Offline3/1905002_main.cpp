@@ -49,9 +49,6 @@ void capture() {
   // in actual world space
   double windowHeight = 2 * nearPlane * tan(fovY / 2 * (M_PI / 180));
   double windowWidth = windowHeight * aspectRatio;
-
-  std::cout << "Window Height : " << windowHeight << " Window Width : " << windowWidth << std::endl;  
-
   Vec l = camera.getLookUnitVector();
   Vec r = camera.getRightUnitVector();
   Vec u = camera.getUUnitVector();
@@ -261,20 +258,20 @@ void clearObjects() {
 }
 
 void testSetObjects() {
-  Sphere *sphere = new Sphere(Vec(0, 0, 10), 5);
+  Sphere *sphere = new Sphere(Vec(0, 0, 10), 10);
   sphere->setColor(1, 0, 0);
-  sphere->setCoEfficients(0.4, 0.2, 0.2, 0.2);
-  sphere->setShine(2);
+  sphere->setCoEfficients(0.2, 0.6, 0.8, 0.2);
+  sphere->setShine(10);
   objects.push_back(sphere);
 
   Floor *floor = new Floor(1000, 20);
   objects.push_back(floor);
 
-  PointLight pointLight(Vec(20, 20, 40), Color(0, 1, 1));
+  PointLight pointLight(Vec(20, -20, 30), Color(0, 1, 0));
   pointLights.push_back(pointLight);
 
-  SpotLight spotLight(Vec(20, 20, 15), Color(1, 0, 1), Vec(-1, -1, -1), 30);
-  spotLights.push_back(spotLight);
+  // SpotLight spotLight(Vec(20, 20, 15), Color(1, 0, 1), Vec(-1, -1, -1), 30);
+  // spotLights.push_back(spotLight);
 
   capture();
 
