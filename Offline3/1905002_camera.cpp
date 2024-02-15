@@ -79,6 +79,15 @@ public:
     return up.getNormalizedResult();
   }
 
+  Vec getUUnitVector() {
+    Vec lookUnit = getLookUnitVector();
+    Vec rightUnit = getRightUnitVector();
+
+    Vec u = rightUnit.getCrossProduct(lookUnit).getNormalizedResult();
+
+    return u;
+  }
+
   void moveCameraPositionAlongVector(Vec look, double distance) {
     ex += look.x * distance;
     ey += look.y * distance;

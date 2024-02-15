@@ -6,7 +6,13 @@
 #endif
 
 #include "1905002_vec.cpp"
+#include <iostream>
 #include <vector>
+
+#define AMB 0
+#define DIFF 1
+#define SPEC 2
+#define REFL 3
 
 // contains color, from 0 to 1
 class Color {
@@ -23,6 +29,18 @@ public:
     this->r = r;
     this->g = g;
     this->b = b;
+  }
+
+  // overloaded operators
+
+  // overload * with double
+  Color operator*(double scalar) {
+    Color result;
+    result.r = r * scalar;
+    result.g = g * scalar;
+    result.b = b * scalar;
+
+    return result;
   }
 };
 
@@ -67,6 +85,18 @@ public:
     this->direction = direction;
     this->cutOffAngle = cutOffAngle;
   }
+
+  void draw() { pointLight.draw(); }
+};
+
+class Ray {
+public:
+  Vec start, dir;
+
+  Ray(Vec start, Vec dir) {
+    this->start = start;
+    this->dir = dir.getNormalizedResult();
+  }
 };
 
 class Object {
@@ -91,6 +121,8 @@ public:
   }
 
   virtual void draw() = 0;
+  virtual double intersect(Ray *ray, Color *color, int level) = 0;
+
   void setColor(double r, double g, double b) { color = Color(r, g, b); }
   void setShine(int shine) { this->shine = shine; }
   void setCoEfficients(double a, double d, double s, double r) {
@@ -126,41 +158,99 @@ public:
     glutSolidSphere(height, sectorsCount, stacksCount);
     glPopMatrix();
   }
+
+  double intersect(Ray *ray, Color *color, int level) {
+
+    double t = this->getTmin(ray);
+
+    if (level == 0) {
+      return t;
+    }
+
+    Vec intersectionPoint = ray->start + ray->dir * t;
+    Color intersectionPointColor = getColorAt(intersectionPoint);
+
+    *color = intersectionPointColor * coEfficients[AMB];
+
+    return t;
+  }
+
+  double getTmin(Ray *ray) {
+    Vec R_0 = ray->start - reference_point; // move the sphere to the origin,
+                                            // rthis formula for -R_0
+    double tp = -ray->dir.getDotProduct(R_0);
+
+    if (tp < 0) {
+      return -1.0; // ray is in opposite direction
+    }
+
+    double d2 = R_0.getDotProduct(R_0) - tp * tp;
+
+    double radius2 = height * height;
+
+    if (d2 > radius2) {
+      return -1.0; // ray misses the sphere
+    }
+
+    // find whether the origin is inside or outside the sphere
+    bool outside = true;
+
+    if (R_0.getDotProduct(R_0) < radius2) // origin is inside the sphere
+      outside = false;
+
+    double t1 = sqrt(radius2 - d2);
+
+    double t;
+    if (outside) {
+      t = tp - t1;
+    } else {
+      t = tp + t1;
+    }
+
+    return t;
+  }
+
+  Color getColorAt(Vec intersectionPoint) { return color; }
+
+  Vec getNormalAtIntersectionPoint(Vec intersectionPoint) {
+    Vec normal = intersectionPoint - reference_point;
+    return normal.getNormalizedResult();
+  }
 };
 
 class Floor : public Object {
-  int tesselation;
 
 public:
+  int tesselation;
+  double tileWidth, floorWidth;
   Floor(double floorWidth, double tileWidth) {
-    this->reference_point = Vec(-floorWidth / 2, -floorWidth / 2, 0);
-    this->height = floorWidth;
-    this->width = floorWidth;
-    this->length = 0;
+    this->floorWidth = floorWidth;
+    this->tileWidth = tileWidth;
     this->tesselation = floorWidth / tileWidth;
   }
 
   void draw() {
     // openGL code to draw floor
     glPushMatrix();
-    glTranslated(reference_point.x, reference_point.y, reference_point.z);
-    for (int i = 0; i < tesselation; i++) {
-      for (int j = 0; j < tesselation; j++) {
+    glBegin(GL_QUADS);
+    for (int i = -tesselation; i < tesselation; i++) {
+      for (int j = -tesselation; j < tesselation; j++) {
         if ((i + j) % 2 == 0) {
-          glColor3f(1, 1, 1);
+          glColor3f(1.0f, 1.0f, 1.0f); // White
         } else {
-          glColor3f(0, 0, 0);
+          glColor3f(0.0f, 0.0f, 0.0f); // Black
         }
-        glBegin(GL_QUADS);
-        glVertex3f(i, j, 0);
-        glVertex3f(i + 1, j, 0);
-        glVertex3f(i + 1, j + 1, 0);
-        glVertex3f(i, j + 1, 0);
-        glEnd();
+        glVertex3f(i * tileWidth, j * tileWidth, 0);
+        glVertex3f(i * tileWidth, (j + 1) * tileWidth, 0);
+        glVertex3f((i + 1) * tileWidth, (j + 1) * tileWidth, 0);
+        glVertex3f((i + 1) * tileWidth, j * tileWidth, 0);
       }
     }
+    glEnd();
     glPopMatrix();
   }
+
+  double intersect(Ray *ray, Color *color, int level) { return 0; }
 };
 
 class Triangle : public Object {
@@ -184,4 +274,6 @@ public:
     glEnd();
     glPopMatrix();
   }
+
+  double intersect(Ray *ray, Color *color, int level) { return 0; }
 };

@@ -1,4 +1,5 @@
 #include <cmath>
+#include <ostream>
 // #include <bits/stdc++.h>
 #pragma once
 class Vec {
@@ -41,6 +42,15 @@ public:
     result.x = x * scalar;
     result.y = y * scalar;
     result.z = z * scalar;
+
+    return result;
+  }
+
+  Vec operator*(Vec v) {
+    Vec result;
+    result.x = x * v.x;
+    result.y = y * v.y;
+    result.z = z * v.z;
 
     return result;
   }
@@ -108,6 +118,12 @@ public:
     }
 
     return acos(dot_product / (magnitude_a * magnitude_b));
+  }
+
+  // overload << operator
+  friend std::ostream &operator<<(std::ostream &os, const Vec &v) {
+    os << "(" << v.x << ", " << v.y << ", " << v.z << ")";
+    return os;
   }
 };
 

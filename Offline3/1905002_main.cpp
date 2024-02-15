@@ -16,6 +16,12 @@
 double rotation_angle = 0.025;
 double step = 0.5;
 
+double nearPlane = 1, farPlane = 1000, fovY = 60, aspectRatio = 1;
+
+// in pixels
+int imageWidth = 600;
+int imageHeight = 600;
+
 Camera camera;
 
 void init() {
@@ -25,7 +31,88 @@ void init() {
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluPerspective(60, 1, 1, 500);
+  gluPerspective(fovY, aspectRatio, nearPlane, farPlane);
+}
+
+void capture() {
+  // initialize bitmap image array
+  std::vector<std::vector<Color>> image;
+
+  for (int i = 0; i < imageHeight; i++) {
+    std::vector<Color> row;
+    for (int j = 0; j < imageWidth; j++) {
+      row.push_back(Color(0, 0, 0));
+    }
+    image.push_back(row);
+  }
+
+  // in actual world space
+  double windowHeight = 2 * nearPlane * tan(fovY / 2 * (M_PI / 180));
+  double windowWidth = windowHeight * aspectRatio;
+
+  std::cout << "Window Height : " << windowHeight << " Window Width : " << windowWidth << std::endl;  
+
+  Vec l = camera.getLookUnitVector();
+  Vec r = camera.getRightUnitVector();
+  Vec u = camera.getUUnitVector();
+
+  Vec eye = Vec(camera.ex, camera.ey, camera.ez);
+
+  Vec topLeft = eye + l * nearPlane - r * (windowWidth / 2) + u * (windowHeight / 2);
+
+  double du = windowWidth / imageWidth;
+  double dv = windowHeight / imageHeight;
+
+  for (int i = 0; i < imageHeight; i++) {
+    for (int j = 0; j < imageWidth; j++) {
+
+      Vec pixel = topLeft + r * (j + 1.0/2.0) * du - u * ( i + 1.0/2.0 )* dv;
+      Vec direction = (pixel - eye).getNormalizedResult();
+
+      // std::cout << "Pixel : " << pixel << " ---> Direction : " << direction << std::endl;
+
+      // starting from nearplane pixel
+      Ray ray(pixel, direction);
+
+      Color color;
+
+      double tMin = 1e26;
+      int nearestObjectIndex = -1;
+
+      for (int k = 0; k < objects.size(); k++) {
+        Color dummyColor;
+        double t = objects[k]->intersect(&ray, &dummyColor, 1);
+        if (t > 0 && t < tMin) {
+          tMin = t;
+          nearestObjectIndex = k;
+        }
+      }
+      
+      if(nearestObjectIndex != -1) {
+        tMin = objects[nearestObjectIndex]->intersect(&ray, &color, 1);
+      }
+      image[i][j] = color;
+    }
+  }
+
+  // save the image
+  std::ofstream out("output.bmp", std::ios::binary);
+
+  out << "P6\n" << imageWidth << " " << imageHeight << "\n255\n";
+
+  for (int i = 0; i < imageHeight; i++) {
+    for (int j = 0; j < imageWidth; j++) {
+      Color color = image[i][j];
+      out << (unsigned char)(std::min(1.0, color.r) * 255) << (unsigned char)(std::min(1.0, color.g) * 255) << (unsigned char)(std::min(1.0, color.b) * 255);
+    }
+  }
+
+  out.close();
+
+  std::cout << "Image saved" << std::endl;
+
+
+
 }
 
 void keyboardSpecialListener(int key, int x, int y) {
@@ -96,6 +183,11 @@ void keyboardListener(unsigned char key, int x, int y) {
   case '6': // tilt clockwise
     printf("6 pressed\n");
     { camera.tiltClockwiseOrAntiClockwise(rotation_angle, false); }
+    break;
+
+  case '0':
+    printf("0 pressed\n");
+    capture();
     break;
 
   case 'w':
@@ -169,19 +261,36 @@ void clearObjects() {
 }
 
 void testSetObjects() {
-  Sphere *sphere = new Sphere(Vec(0, 0, 0.5), 0.5);
+  Sphere *sphere = new Sphere(Vec(0, 0, 10), 5);
   sphere->setColor(1, 0, 0);
   sphere->setCoEfficients(0.4, 0.2, 0.2, 0.2);
   sphere->setShine(2);
   objects.push_back(sphere);
 
-  Floor *floor = new Floor(10, 1);
+  Floor *floor = new Floor(1000, 20);
   objects.push_back(floor);
+
+  PointLight pointLight(Vec(20, 20, 40), Color(0, 1, 1));
+  pointLights.push_back(pointLight);
+
+  SpotLight spotLight(Vec(20, 20, 15), Color(1, 0, 1), Vec(-1, -1, -1), 30);
+  spotLights.push_back(spotLight);
+
+  capture();
+
 }
 
 void displayObjects() {
   for (auto object : objects) {
     object->draw();
+  }
+
+  for (auto pointLight : pointLights) {
+    pointLight.draw();
+  }
+
+  for (auto spotLight : spotLights) {
+    spotLight.draw();
   }
 }
 
@@ -196,8 +305,8 @@ void display() {
   gluLookAt(camera.ex, camera.ey, camera.ez, camera.lx, camera.ly, camera.lz,
             camera.ux, camera.uy, camera.uz);
 
-  // glColor3f(1.0f, 0.0f, 0.0f); // Green
-  // drawAxes();
+  glColor3f(0.0f, 0.0f, 1.0f); // Green
+  drawAxes();
 
   displayObjects();
 
@@ -232,5 +341,7 @@ int main(int argc, char **argv) {
   testSetObjects();
 
   glutMainLoop();
+
+  clearObjects();
   return 0;
 }
