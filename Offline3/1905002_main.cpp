@@ -14,7 +14,7 @@
 #define CHECKERBOARD_SIZE 80
 
 double rotation_angle = 0.025;
-double step = 0.5;
+double step = 2;
 
 double nearPlane = 1, farPlane = 1000, fovY = 60, aspectRatio = 1;
 
@@ -262,26 +262,26 @@ void clearObjects() {
 void testSetObjects() {
   Sphere *sphere = new Sphere(Vec(0, 0, 10), 10);
   sphere->setColor(0, 0, 1);
-  sphere->setCoEfficients(0.2, 0.6, 0.3, 0.4);
-  sphere->setShine(6);
+  sphere->setCoEfficients(0.2, 0.6, 0.3, 0.5);
+  sphere->setShine(10);
   objects.push_back(sphere);
 
   sphere = new Sphere(Vec(-20, 10, 10), 10);
   sphere->setColor(0, 1, 0);
   sphere->setCoEfficients(0.2, 0.6, 0.6, 0.5);
-  sphere->setShine(6);
+  sphere->setShine(10);
   objects.push_back(sphere);
 
   sphere = new Sphere(Vec(20, -10, 10), 8);
   sphere->setColor(1, 1, 0);
   sphere->setCoEfficients(0.2, 0.6, 0.6, 0.5);
-  sphere->setShine(6);
+  sphere->setShine(10);
   objects.push_back(sphere);
 
   sphere = new Sphere(Vec(10, -20, 30), 8);
   sphere->setColor(0, 1, 1);
   sphere->setCoEfficients(0.2, 0.6, 0.6, 0.5);
-  sphere->setShine(6);
+  sphere->setShine(10);
   objects.push_back(sphere);
 
 
@@ -289,6 +289,15 @@ void testSetObjects() {
   floor->setCoEfficients(0.4, 0.4, 0.3, 0.1);
   floor->setShine(1);
   objects.push_back(floor);
+
+
+  Vec a(70, 60, 0); Vec b(30, 60, 0); Vec c(50, 45, 50);
+  Triangle *triangle = new Triangle(a, b, c);
+  triangle->setColor(0.0, 1.0, 0.0);
+  triangle->setCoEfficients(0.4, 0.2, 0.1, 0.7);
+  triangle->setShine(5);
+  objects.push_back(triangle);
+
 
   PointLight pointLight(Vec(0, 0, 60), Color(1, 0, 0));
   pointLights.push_back(pointLight);
@@ -299,6 +308,9 @@ void testSetObjects() {
   // (207,89,6)
   SpotLight spotLight(Vec(20, 20, 20), Color(207.0/255.0, 89/255.0, 6/255.0), Vec(-1, -1, -3), 45);
   spotLights.push_back(spotLight);
+
+  SpotLight spotLight2(Vec(60, 80, 45), Color(89.0/255.0, 207.0/255.0, 6/255.0), Vec(0, -1, -3), 30);
+  spotLights.push_back(spotLight2);
 
 
 }

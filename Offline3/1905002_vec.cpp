@@ -1,5 +1,6 @@
 #include <cmath>
 #include <ostream>
+#include <vector>
 // #include <bits/stdc++.h>
 #pragma once
 class Vec {
@@ -121,9 +122,9 @@ public:
 
     double res = dot_product / (magnitude_a * magnitude_b);
 
-    if(res > 1) {
+    if (res > 1) {
       res = 1;
-    } else if(res < -1) {
+    } else if (res < -1) {
       res = -1;
     }
 
@@ -137,3 +138,34 @@ public:
   }
 };
 
+// 3X3 double matrix
+class Matrix {
+public:
+  double matrix[3][3];
+
+  Matrix() {
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        matrix[i][j] = 0;
+      }
+    }
+  }
+
+  Matrix(std::vector<std::vector<double>> matrix) {
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        this->matrix[i][j] = matrix[i][j];
+      }
+    }
+  }
+
+  // methods
+  double determinant() {
+    return matrix[0][0] *
+               (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1]) -
+           matrix[0][1] *
+               (matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0]) +
+           matrix[0][2] *
+               (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0]);
+  }
+};

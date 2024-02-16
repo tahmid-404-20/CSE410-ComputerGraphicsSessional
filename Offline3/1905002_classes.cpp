@@ -383,6 +383,85 @@ public:
   }
 };
 
+class Triangle : public Object {
+  Vec a, b, c;
+
+public:
+  Triangle(Vec a, Vec b, Vec c) {
+    this->a = a;
+    this->b = b;
+    this->c = c;
+  }
+
+  void draw() {
+    // openGL code to draw triangle
+    glPushMatrix();
+    glColor3f(color.r, color.g, color.b);
+    glBegin(GL_TRIANGLES);
+    glVertex3f(a.x, a.y, a.z);
+    glVertex3f(b.x, b.y, b.z);
+    glVertex3f(c.x, c.y, c.z);
+    glEnd();
+    glPopMatrix();
+  }
+
+  double getTmin(Ray *ray) {
+    Vec R_0 = ray->start;
+    Vec Rd = ray->dir;
+
+    // construct matrix A
+    Matrix A;
+    A.matrix[0][0] = a.x - b.x;   A.matrix[0][1] = a.x - c.x;   A.matrix[0][2] = Rd.x;
+    A.matrix[1][0] = a.y - b.y;   A.matrix[1][1] = a.y - c.y;   A.matrix[1][2] = Rd.y;
+    A.matrix[2][0] = a.z - b.z;   A.matrix[2][1] = a.z - c.z;   A.matrix[2][2] = Rd.z;
+
+    // construct matrix beta
+    Matrix beta;
+    beta.matrix[0][0] = a.x - R_0.x;   beta.matrix[0][1] = a.x - c.x;   beta.matrix[0][2] = Rd.x;
+    beta.matrix[1][0] = a.y - R_0.y;   beta.matrix[1][1] = a.y - c.y;   beta.matrix[1][2] = Rd.y;
+    beta.matrix[2][0] = a.z - R_0.z;   beta.matrix[2][1] = a.z - c.z;   beta.matrix[2][2] = Rd.z;
+
+    // construct matrix gamma
+    Matrix gamma;
+    gamma.matrix[0][0] = a.x - b.x;   gamma.matrix[0][1] = a.x - R_0.x;   gamma.matrix[0][2] = Rd.x;
+    gamma.matrix[1][0] = a.y - b.y;   gamma.matrix[1][1] = a.y - R_0.y;   gamma.matrix[1][2] = Rd.y;
+    gamma.matrix[2][0] = a.z - b.z;   gamma.matrix[2][1] = a.z - R_0.z;   gamma.matrix[2][2] = Rd.z;
+
+    // construct matrix t
+    Matrix t;
+    t.matrix[0][0] = a.x - b.x;   t.matrix[0][1] = a.x - c.x;   t.matrix[0][2] = a.x - R_0.x;
+    t.matrix[1][0] = a.y - b.y;   t.matrix[1][1] = a.y - c.y;   t.matrix[1][2] = a.y - R_0.y;
+    t.matrix[2][0] = a.z - b.z;   t.matrix[2][1] = a.z - c.z;   t.matrix[2][2] = a.z - R_0.z;
+
+    double detA = A.determinant();
+
+    if (fabs(detA - 0.0) < EPSILON / 10) {
+      return -1;
+    }
+
+    double betaVal = beta.determinant() / detA;
+    double gammaVal = gamma.determinant() / detA;
+
+    if (betaVal < 0 || gammaVal < 0 || betaVal + gammaVal > 1) {
+      return -1;
+    }
+
+    double tVal = t.determinant() / detA;
+
+    return tVal;
+  }
+
+  Color getColorAt(Vec intersectionPoint) { return color; }
+
+  Vec getNormalAtIntersectionPoint(Vec intersectionPoint) {
+    Vec normal = (b - a).getCrossProduct(c - a);
+    return normal.getNormalizedResult();
+  }
+
+};
+
+
+
 class Floor : public Object {
 
 public:
@@ -451,26 +530,4 @@ public:
   }
 };
 
-// class Triangle : public Object {
-//   Vec a, b, c;
 
-// public:
-//   Triangle(Vec a, Vec b, Vec c) {
-//     this->a = a;
-//     this->b = b;
-//     this->c = c;
-//   }
-
-//   void draw() {
-//     // openGL code to draw triangle
-//     glPushMatrix();
-//     glBegin(GL_TRIANGLES);
-//     glColor3f(color.r, color.g, color.b);
-//     glVertex3f(a.x, a.y, a.z);
-//     glVertex3f(b.x, b.y, b.z);
-//     glVertex3f(c.x, c.y, c.z);
-//     glEnd();
-//     glPopMatrix();
-//   }
-
-// };
