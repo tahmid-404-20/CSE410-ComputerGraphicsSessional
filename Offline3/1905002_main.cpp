@@ -294,23 +294,70 @@ void testSetObjects() {
   Vec a(70, 60, 0); Vec b(30, 60, 0); Vec c(50, 45, 50);
   Triangle *triangle = new Triangle(a, b, c);
   triangle->setColor(0.0, 1.0, 0.0);
-  triangle->setCoEfficients(0.4, 0.2, 0.1, 0.7);
+  triangle->setCoEfficients(0.4, 0.2, 0.1, 0.2);
   triangle->setShine(5);
   objects.push_back(triangle);
+
+  // triangle = new Triangle(Vec(70, 60, 0), Vec(50, 45, 50), Vec(70, 30, 0));
+  // triangle->setColor(1.0, 0.0, 0.0);
+  // triangle->setCoEfficients(0.4, 0.2, 0.1, 0.7);
+  // triangle->setShine(5);
+  // objects.push_back(triangle);
+
+  triangle = new Triangle(Vec(70, 30, 0), Vec(30, 60, 0), Vec(50, 45, 50));
+  triangle->setColor(1.0, 0.0, 1.0);
+  triangle->setCoEfficients(0.4, 0.2, 0.1, 0.2);
+  triangle->setShine(5);
+  objects.push_back(triangle);
+  /*
+  general
+  1 1 1 0 0 0 0 0 0 -100
+0 0 0 0 0 20
+0.0 1.0 0.0
+0.4 0.2 0.1 0.3
+10
+  */
+
+  std::vector<double> parameters  = {1, 1, 1, 0, 0, 0, 0, 0, 0, -100};
+  BoundingBox boundingBox = BoundingBox(Vec(0,0,0), 0,0,20);
+  General *general = new General(parameters, boundingBox);
+  general->setColor(0.0, 1.0, 0.0);
+  general->setCoEfficients(0.4, 0.2, 0.1, 0.3);
+  general->setShine(10);
+  objects.push_back(general);
+
+  /* 
+  general
+0.0625 0.04 0.04 0 0 0 0 0 0 -36
+0 0 0 0 0 15
+1.0 0.0 0.0
+0.4 0.2 0.1 0.3
+15
+  */
+
+  parameters = {0.0625, 0.04, 0.04, 0, 0, 0, 0, 0, 0, -36};
+  boundingBox = BoundingBox(Vec(0,0,0), 0,0,15);
+  general = new General(parameters, boundingBox);
+  general->setColor(1.0, 0.0, 0.0);
+  general->setCoEfficients(0.4, 0.2, 0.1, 0.3);
+  general->setShine(15);
+  objects.push_back(general);
+
+
 
 
   PointLight pointLight(Vec(0, 0, 60), Color(1, 0, 0));
   pointLights.push_back(pointLight);
 
-  PointLight pointLight2(Vec(-30, -40, 20), Color(0.5, 1, 0.5));
-  pointLights.push_back(pointLight2);
+  // PointLight pointLight2(Vec(-30, -40, 50), Color(0.5, 1, 0.5));
+  // pointLights.push_back(pointLight2);
 
-  // (207,89,6)
-  SpotLight spotLight(Vec(20, 20, 20), Color(207.0/255.0, 89/255.0, 6/255.0), Vec(-1, -1, -3), 45);
-  spotLights.push_back(spotLight);
+  // // (207,89,6)
+  // SpotLight spotLight(Vec(20, 20, 20), Color(207.0/255.0, 89/255.0, 6/255.0), Vec(-1, -1, -3), 45);
+  // spotLights.push_back(spotLight);
 
-  SpotLight spotLight2(Vec(60, 80, 45), Color(89.0/255.0, 207.0/255.0, 6/255.0), Vec(0, -1, -3), 30);
-  spotLights.push_back(spotLight2);
+  // SpotLight spotLight2(Vec(60, 80, 45), Color(89.0/255.0, 207.0/255.0, 6/255.0), Vec(0, -1, -3), 30);
+  // spotLights.push_back(spotLight2);
 
 
 }
