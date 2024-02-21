@@ -333,11 +333,11 @@ double Object::intersect(Ray *ray, Color *color, int level) {
       *color =
           *color + (intersectionPointColor * coEfficients[DIFF] * NL *
                     spotLight.pointLight.color *
-                    pow(cos(angle * M_PI / 180.0), 2.4)); // diffuse component
+                    pow(cos(angle * M_PI / 180.0), 4.4)); // diffuse component
 
       *color = *color + (spotLight.pointLight.color * coEfficients[SPEC] *
                          pow(RV, shine) * intersectionPointColor *
-                         pow(cos(angle * M_PI / 180.0), 2.4)); // specular
+                         pow(cos(angle * M_PI / 180.0), 4.4)); // specular
     }
   }
 
@@ -387,7 +387,6 @@ public:
     this->length = radius;
     this->sectorsCount = 50;
     this->stacksCount = 100;
-    std::cout << "In sphere: recursion level: " << recursionLevel << std::endl;
   }
 
   void draw() {

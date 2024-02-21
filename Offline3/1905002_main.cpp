@@ -1,6 +1,7 @@
 #include "1905002_camera.cpp"
 #include "1905002_classes.cpp"
 #include <bits/stdc++.h>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -23,17 +24,46 @@ int imageWidth = 2000;
 int imageHeight = 2000;
 
 int recursionLevel = 3;
+int capturedCount = 0;
 
 Camera camera;
 
 void init() {
-  printf("Do your initialization here\n");
+  // printf("Do your initialization here\n");
   glClearColor(0.0f, 0.0f, 0.0f,
                1.0f); // Set background color to black and opaque
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   gluPerspective(fovY, aspectRatio, nearPlane, farPlane);
+}
+
+void captureComputeUpdatePixel(std::vector<std::vector<Color>> &image, int i,
+                               int j, Vec topLeft, Vec r, Vec u, Vec eye,
+                               double du, double dv) {
+  Vec pixel = topLeft + r * (j + 1.0 / 2.0) * du - u * (i + 1.0 / 2.0) * dv;
+  Vec direction = (pixel - eye).getNormalizedResult();
+
+  Ray ray(pixel, direction);
+
+  Color color;
+
+  double tMin = 1e26;
+  int nearestObjectIndex = -1;
+
+  for (int k = 0; k < objects.size(); k++) {
+    Color dummyColor;
+    double t = objects[k]->intersect(&ray, &dummyColor, 1);
+    if (t > 0 && t < tMin) {
+      tMin = t;
+      nearestObjectIndex = k;
+    }
+  }
+
+  if (nearestObjectIndex != -1) {
+    tMin = objects[nearestObjectIndex]->intersect(&ray, &color, 1);
+  }
+  image[i][j] = color;
 }
 
 void capture() {
@@ -57,19 +87,19 @@ void capture() {
 
   Vec eye = Vec(camera.ex, camera.ey, camera.ez);
 
-  Vec topLeft = eye + l * nearPlane - r * (windowWidth / 2) + u * (windowHeight / 2);
+  Vec topLeft =
+      eye + l * nearPlane - r * (windowWidth / 2) + u * (windowHeight / 2);
 
   double du = windowWidth / imageWidth;
   double dv = windowHeight / imageHeight;
 
+  // define vector of threads
+
   for (int i = 0; i < imageHeight; i++) {
     for (int j = 0; j < imageWidth; j++) {
 
-      Vec pixel = topLeft + r * (j + 1.0/2.0) * du - u * ( i + 1.0/2.0 )* dv;
+      Vec pixel = topLeft + r * (j + 1.0 / 2.0) * du - u * (i + 1.0 / 2.0) * dv;
       Vec direction = (pixel - eye).getNormalizedResult();
-
-      // std::cout << "Pixel : " << pixel << " ---> Direction : " << direction << std::endl;
-
       // starting from nearplane pixel
       Ray ray(pixel, direction);
 
@@ -86,8 +116,8 @@ void capture() {
           nearestObjectIndex = k;
         }
       }
-      
-      if(nearestObjectIndex != -1) {
+
+      if (nearestObjectIndex != -1) {
         tMin = objects[nearestObjectIndex]->intersect(&ray, &color, 1);
       }
       image[i][j] = color;
@@ -95,23 +125,24 @@ void capture() {
   }
 
   // save the image
-  std::ofstream out("output.bmp", std::ios::binary);
+  capturedCount++;
+  std::string fileName = "Output1_" + std::to_string(capturedCount) + ".bmp";
+  std::ofstream out(fileName, std::ios::binary);
 
   out << "P6\n" << imageWidth << " " << imageHeight << "\n255\n";
 
   for (int i = 0; i < imageHeight; i++) {
     for (int j = 0; j < imageWidth; j++) {
       Color color = image[i][j];
-      out << (unsigned char)(std::min(1.0, color.r) * 255) << (unsigned char)(std::min(1.0, color.g) * 255) << (unsigned char)(std::min(1.0, color.b) * 255);
+      out << (unsigned char)(std::min(1.0, color.r) * 255)
+          << (unsigned char)(std::min(1.0, color.g) * 255)
+          << (unsigned char)(std::min(1.0, color.b) * 255);
     }
   }
 
   out.close();
 
   std::cout << "Image saved" << std::endl;
-
-
-
 }
 
 void keyboardSpecialListener(int key, int x, int y) {
@@ -186,6 +217,7 @@ void keyboardListener(unsigned char key, int x, int y) {
 
   case '0':
     printf("0 pressed\n");
+    
     capture();
     break;
 
@@ -205,33 +237,7 @@ void keyboardListener(unsigned char key, int x, int y) {
   }
 }
 
-void drawCheckerBox(double a, int color = 0) {
-  // color = 0 -> black, color = 1 -> white
-  glBegin(GL_QUADS);
-  {
-    if (color == 0) {
-      glColor3f(0.0f, 0.0f, 0.0f); // Black
-    } else {
-      glColor3f(1.0f, 1.0f, 1.0f); // White
-    }
-    glVertex3f(0, 0, 0);
-    glVertex3f(0, a, 0);
-    glVertex3f(a, a, 0);
-    glVertex3f(a, 0, 0);
-  }
-  glEnd();
-}
 
-void drawCheckers(double a) {
-  for (int i = -CHECKERBOARD_SIZE; i < CHECKERBOARD_SIZE; i++) {
-    for (int j = -CHECKERBOARD_SIZE; j < CHECKERBOARD_SIZE; j++) {
-      glPushMatrix();
-      glTranslatef(i * a, j * a, 0);
-      drawCheckerBox(a, (i + j) % 2);
-      glPopMatrix();
-    }
-  }
-}
 
 void drawAxes() {
   glBegin(GL_LINES);
@@ -259,6 +265,99 @@ void clearObjects() {
   objects.clear();
 }
 
+void loadData(std::string fileName) {
+  std::ifstream input(fileName);
+
+  if (!input) {
+    std::cerr << "File not found" << std::endl;
+    return;
+  }
+
+  // take input of recursion level, image width
+  input >> recursionLevel >> imageWidth;
+  imageHeight = imageWidth;
+
+  int nObjects;
+  input >> nObjects;
+
+  for (int i = 0; i < nObjects; i++) {
+    std::string objectType;
+    input >> objectType;
+    Object *object;
+
+    if (objectType == "sphere") {
+      double x, y, z, radius;
+      input >> x >> y >> z >> radius;
+      object = new Sphere(Vec(x, y, z), radius);
+    } else if (objectType == "triangle") {
+      double x1, y1, z1, x2, y2, z2, x3, y3, z3;
+      input >> x1 >> y1 >> z1 >> x2 >> y2 >> z2 >> x3 >> y3 >> z3;
+
+      Vec a(x1, y1, z1);
+      Vec b(x2, y2, z2);
+      Vec c(x3, y3, z3);
+
+      object = new Triangle(a, b, c);
+
+    } else if (objectType == "general") {
+      std::vector<double> parameters;
+      for (int i = 0; i < 10; i++) {
+        double parameter;
+        input >> parameter;
+        parameters.push_back(parameter);
+      }
+      BoundingBox boundingBox;
+      double x, y, z, length, width, height;
+      input >> x >> y >> z >> length >> width >> height;
+      boundingBox = BoundingBox(Vec(x, y, z), length, width, height);
+      object = new General(parameters, boundingBox);
+    } else {
+      std::cout << "problem with input file" << std::endl;
+      exit(1);
+    }
+
+    double colorR, colorG, colorB;
+    input >> colorR >> colorG >> colorB;
+
+    double amb, diff, spec, refl;
+    input >> amb >> diff >> spec >> refl;
+
+    int shine;
+    input >> shine;
+
+    object->setColor(colorR, colorG, colorB);
+    object->setCoEfficients(amb, diff, spec, refl);
+    object->setShine(shine);
+
+    objects.push_back(object);
+  }
+
+  Floor *floor = new Floor(1000, 20);
+  floor->setCoEfficients(0.3, 0.3, 0.3, 0.1);
+  floor->setShine(1);
+  objects.push_back(floor);
+
+  int nPointLights;
+  input >> nPointLights;
+
+  for (int i = 0; i < nPointLights; i++) {
+    double x, y, z, r, g, b;
+    input >> x >> y >> z >> r >> g >> b;
+    PointLight pointLight(Vec(x, y, z), Color(r, g, b));
+    pointLights.push_back(pointLight);
+  }
+
+  int nSpotLights;
+  input >> nSpotLights;
+
+  for (int i = 0; i < nSpotLights; i++) {
+    double x, y, z, r, g, b, dx, dy, dz, angle;
+    input >> x >> y >> z >> r >> g >> b >> dx >> dy >> dz >> angle;
+    SpotLight spotLight(Vec(x, y, z), Color(r, g, b), Vec(dx, dy, dz), angle);
+    spotLights.push_back(spotLight);
+  }
+}
+
 void testSetObjects() {
   Sphere *sphere = new Sphere(Vec(0, 0, 10), 10);
   sphere->setColor(0, 0, 1);
@@ -278,20 +377,32 @@ void testSetObjects() {
   sphere->setShine(10);
   objects.push_back(sphere);
 
+  sphere = new Sphere(Vec(40, -10, 10), 8);
+  sphere->setColor(0.8, 0.8, 0.8);
+  sphere->setCoEfficients(0.2, 0.1, 0.1, 1.0);
+  sphere->setShine(10);
+  objects.push_back(sphere);
+
+  sphere = new Sphere(Vec(0, 0, 0), 200);
+  sphere->setColor(0.85, 0.85, 0.85);
+  sphere->setCoEfficients(0.2, 0.1, 0.1, 0.8);
+  sphere->setShine(10);
+  objects.push_back(sphere);
+
   sphere = new Sphere(Vec(10, -20, 30), 8);
   sphere->setColor(0, 1, 1);
   sphere->setCoEfficients(0.2, 0.6, 0.6, 0.5);
   sphere->setShine(10);
   objects.push_back(sphere);
 
-
   Floor *floor = new Floor(1000, 20);
   floor->setCoEfficients(0.4, 0.4, 0.3, 0.1);
   floor->setShine(1);
   objects.push_back(floor);
 
-
-  Vec a(70, 60, 0); Vec b(30, 60, 0); Vec c(50, 45, 50);
+  Vec a(70, 60, 0);
+  Vec b(30, 60, 0);
+  Vec c(50, 45, 50);
   Triangle *triangle = new Triangle(a, b, c);
   triangle->setColor(0.0, 1.0, 0.0);
   triangle->setCoEfficients(0.4, 0.2, 0.1, 0.2);
@@ -318,15 +429,15 @@ void testSetObjects() {
 10
   */
 
-  std::vector<double> parameters  = {1, 1, 1, 0, 0, 0, 0, 0, 0, -100};
-  BoundingBox boundingBox = BoundingBox(Vec(0,0,0), 0,0,20);
+  std::vector<double> parameters = {1, 1, 1, 0, 0, 0, 0, 0, 0, -100};
+  BoundingBox boundingBox = BoundingBox(Vec(0, 0, 0), 0, 0, 20);
   General *general = new General(parameters, boundingBox);
   general->setColor(0.0, 1.0, 0.0);
   general->setCoEfficients(0.4, 0.2, 0.1, 0.3);
   general->setShine(10);
   objects.push_back(general);
 
-  /* 
+  /*
   general
 0.0625 0.04 0.04 0 0 0 0 0 0 -36
 0 0 0 0 0 15
@@ -336,30 +447,29 @@ void testSetObjects() {
   */
 
   parameters = {0.0625, 0.04, 0.04, 0, 0, 0, 0, 0, 0, -36};
-  boundingBox = BoundingBox(Vec(0,0,0), 0,0,15);
+  boundingBox = BoundingBox(Vec(0, 0, 0), 0, 0, 15);
   general = new General(parameters, boundingBox);
   general->setColor(1.0, 0.0, 0.0);
   general->setCoEfficients(0.4, 0.2, 0.1, 0.3);
   general->setShine(15);
   objects.push_back(general);
 
-
-
-
   PointLight pointLight(Vec(0, 0, 60), Color(1, 0, 0));
   pointLights.push_back(pointLight);
 
-  // PointLight pointLight2(Vec(-30, -40, 50), Color(0.5, 1, 0.5));
-  // pointLights.push_back(pointLight2);
+  PointLight pointLight2(Vec(-30, -40, 50), Color(0.5, 1, 0.5));
+  pointLights.push_back(pointLight2);
 
-  // // (207,89,6)
-  // SpotLight spotLight(Vec(20, 20, 20), Color(207.0/255.0, 89/255.0, 6/255.0), Vec(-1, -1, -3), 45);
-  // spotLights.push_back(spotLight);
+  // (207,89,6)
+  SpotLight spotLight(Vec(20, 20, 20),
+                      Color(207.0 / 255.0, 89 / 255.0, 6 / 255.0),
+                      Vec(-1, -1, -3), 45);
+  spotLights.push_back(spotLight);
 
-  // SpotLight spotLight2(Vec(60, 80, 45), Color(89.0/255.0, 207.0/255.0, 6/255.0), Vec(0, -1, -3), 30);
-  // spotLights.push_back(spotLight2);
-
-
+  SpotLight spotLight2(Vec(60, 80, 45),
+                       Color(89.0 / 255.0, 207.0 / 255.0, 6 / 255.0),
+                       Vec(0, -1, -3), 30);
+  spotLights.push_back(spotLight2);
 }
 
 void displayObjects() {
@@ -407,7 +517,13 @@ void Timer(int value) {
 }
 
 int main(int argc, char **argv) {
+  if (argc < 2) {
+    std::cerr << "Please provide input file" << std::endl;
+    return 1;
+  }
+
   glutInit(&argc, argv);
+
   glutInitWindowSize(600, 600); // Set the window's initial width & height
   glutInitWindowPosition(750,
                          250); // Position the window's initial top-left corner
@@ -420,7 +536,7 @@ int main(int argc, char **argv) {
   glutIdleFunc(idle);
   init();
 
-  testSetObjects();
+  loadData(argv[1]);
 
   glutMainLoop();
 
