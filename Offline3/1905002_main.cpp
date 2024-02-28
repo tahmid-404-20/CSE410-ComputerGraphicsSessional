@@ -17,7 +17,7 @@
 double rotation_angle = 0.025;
 double step = 2;
 
-double nearPlane = 1, farPlane = 1000, fovY = 60, aspectRatio = 1;
+double nearPlane = 1, farPlane = 100, fovY = 60, aspectRatio = 1;
 
 // in pixels
 int imageWidth = 2000;
@@ -117,16 +117,23 @@ void capture() {
         }
       }
 
+      // if away from far plane, not rendered
+      double distanceFromNearPlaneAlongLook = l.getDotProduct(direction * tMin);
+      if (distanceFromNearPlaneAlongLook > (farPlane - nearPlane)) {
+        continue;
+      }
+
       if (nearestObjectIndex != -1) {
         tMin = objects[nearestObjectIndex]->intersect(&ray, &color, 1);
       }
+
       image[i][j] = color;
     }
   }
 
   // save the image
   capturedCount++;
-  std::string fileName = "Output1_" + std::to_string(capturedCount) + ".bmp";
+  std::string fileName = "Output_1" + std::to_string(capturedCount) + ".bmp";
   std::ofstream out(fileName, std::ios::binary);
 
   out << "P6\n" << imageWidth << " " << imageHeight << "\n255\n";
@@ -217,7 +224,7 @@ void keyboardListener(unsigned char key, int x, int y) {
 
   case '0':
     printf("0 pressed\n");
-    
+
     capture();
     break;
 
@@ -236,8 +243,6 @@ void keyboardListener(unsigned char key, int x, int y) {
     break;
   }
 }
-
-
 
 void drawAxes() {
   glBegin(GL_LINES);
