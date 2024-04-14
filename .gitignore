@@ -1,0 +1,4 @@
+*.out
+*.bmp
+# Ignore all files in the .vscode directory in any subfolder
+.vscode/**

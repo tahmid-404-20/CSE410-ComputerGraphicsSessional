@@ -9,7 +9,7 @@
 #include <iostream>
 #include <vector>
 
-#define TEST 1
+#define TEST 0
 
 #define AMB 0
 #define DIFF 1
@@ -251,7 +251,7 @@ double Object::intersect(Ray *ray, Color *color, int level) {
       Vec N = this->getNormalAtIntersectionPoint(intersectionPoint);
 
       // including it on test
-      if (TEST && N.getDotProduct(ray->dir) > 0) {
+      if (N.getDotProduct(ray->dir) > 0.0) {
         N = N * -1;
       }
 
@@ -266,6 +266,8 @@ double Object::intersect(Ray *ray, Color *color, int level) {
 
       double RV = R.getDotProduct(V);
 
+      if(NL < 0.0) continue;
+      
       NL = std::max(0.0, NL);
       RV = std::max(0.0, RV);
 
@@ -312,7 +314,7 @@ double Object::intersect(Ray *ray, Color *color, int level) {
 
       Vec N = this->getNormalAtIntersectionPoint(intersectionPoint);
 
-      if (TEST && N.getDotProduct(ray->dir) > 0) {
+      if (N.getDotProduct(ray->dir) > 0.0) {
         N = N * -1;
       }
 
@@ -326,6 +328,8 @@ double Object::intersect(Ray *ray, Color *color, int level) {
       R = R.getNormalizedResult();
 
       double RV = R.getDotProduct(V);
+
+      if(NL < 0.0) continue;
 
       NL = std::max(0.0, NL);
       RV = std::max(0.0, RV);
@@ -345,7 +349,7 @@ double Object::intersect(Ray *ray, Color *color, int level) {
                    .getNormalizedResult();
 
   // including it on test
-  if (TEST && normal.getDotProduct(ray->dir) > 0) {
+  if (normal.getDotProduct(ray->dir) > 0.0) {
     normal = normal * -1;
   }
 
@@ -403,23 +407,23 @@ public:
                                             // rthis formula for -R_0
     double tp = -ray->dir.getDotProduct(R_0);
 
-    if (tp < 0) {
-      return -1.0; // ray is in opposite direction
-    }
-
-    double d2 = R_0.getDotProduct(R_0) - tp * tp;
-
     double radius2 = height * height;
-
-    if (d2 > radius2) {
-      return -1.0; // ray misses the sphere
-    }
-
     // find whether the origin is inside or outside the sphere
     bool outside = true;
 
     if (R_0.getDotProduct(R_0) < radius2) // origin is inside the sphere
       outside = false;
+
+    if (tp < 0.0 && outside) {
+      return -1.0; // ray is in opposite direction
+    }
+
+    double d2 = R_0.getDotProduct(R_0) - tp * tp;
+
+
+    if (d2 > radius2) {
+      return -1.0; // ray misses the sphere
+    }
 
     double t1 = sqrt(radius2 - d2);
 

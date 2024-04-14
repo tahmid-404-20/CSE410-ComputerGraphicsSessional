@@ -7,6 +7,7 @@
 
 #ifdef __linux__
 #include <GL/glut.h>
+#include <GL/freeglut.h>
 #elif WIN32
 #include <glut.h>
 #include <windows.h>
@@ -17,7 +18,7 @@
 double rotation_angle = 0.025;
 double step = 2;
 
-double nearPlane = 1, farPlane = 100, fovY = 60, aspectRatio = 1;
+double nearPlane = 1, farPlane = 1000, fovY = 60, aspectRatio = 1;
 
 // in pixels
 int imageWidth = 2000;
@@ -264,6 +265,7 @@ std::vector<PointLight> pointLights;
 std::vector<SpotLight> spotLights;
 
 void clearObjects() {
+  std::cout << "freeing allocated Objects array..." << std::endl;
   for (auto object : objects) {
     delete object;
   }
@@ -338,7 +340,7 @@ void loadData(std::string fileName) {
   }
 
   Floor *floor = new Floor(1000, 20);
-  floor->setCoEfficients(0.3, 0.3, 0.3, 0.1);
+  floor->setCoEfficients(0.5, 0.3, 0.3, 0.1);
   floor->setShine(1);
   objects.push_back(floor);
 
@@ -539,12 +541,14 @@ int main(int argc, char **argv) {
   glutSpecialFunc(keyboardSpecialListener);
 
   glutIdleFunc(idle);
+
+  glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
+  glutCloseFunc(clearObjects);
+
   init();
 
   loadData(argv[1]);
 
   glutMainLoop();
-
-  clearObjects();
   return 0;
 }
